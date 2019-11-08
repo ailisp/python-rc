@@ -1,0 +1,38 @@
+class RcException(Exception):
+    pass
+
+
+class MachineCreationException(RcException):
+    pass
+
+
+class MachineDeletionException(RcException):
+    pass
+
+
+class MachineBootupException(RcException):
+    pass
+
+
+class MachineShutdownException(RcException):
+    pass
+
+
+class UploadException(RcException):
+    pass
+
+
+class DownloadException(RcException):
+    pass
+
+
+class SSHException(RcException):
+    pass
+
+
+class MachineNotRunningException(RcException):
+    pass
+
+
+class ExecException(RcException):
+    pass
