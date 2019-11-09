@@ -8,10 +8,9 @@ autopep8 = "*"
 pytest = "*"
 
 [packages]
-paramiko = "*"
-scp = "*"
 retry = "*"
-pyyaml = "*"
+PyYAML = "*"
+humanfriendly = "*"
 
 [requires]
 python_version = "3.6"

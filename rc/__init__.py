@@ -1,3 +1,3 @@
 from rc.provider import gcloud
-from rc.type import Machine, ExecResult
-from rc.util import exec
+from rc.machine import Machine
+from rc.util import run, RunException

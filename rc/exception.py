@@ -34,5 +34,5 @@ class MachineNotRunningException(RcException):
     pass
 
 
-class ExecException(RcException):
+class RunException(RcException):
     pass
