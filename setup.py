@@ -30,6 +30,6 @@ setuptools.setup(
         'retry',
         'PyYAML',
         'humanfriendly'
-    ]
+    ],
     python_requires='>=3.6',
 )
