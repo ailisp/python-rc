@@ -2,6 +2,7 @@ __pycache__
 .vscode
 /*.txt
 /*.py
+!/setup.py
 .pytest_cache
 dist
 build
