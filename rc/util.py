@@ -107,4 +107,4 @@ def go(func, *args, **kwargs):
 
 
 def pmap(func, *iterables, timeout=None):
-    return executor.map(func, *iterables, timeout=timeout)
+    return list(executor.map(func, *iterables, timeout=timeout))

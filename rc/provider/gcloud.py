@@ -29,11 +29,11 @@ def _reserve_ip_address(ip, name, region):
 
 def _delete_firewall(name):
     return run(['gcloud', 'compute', 'firewall-rules', 'delete',
-                name])
+                name], input='yes\n')
 
 
 def _release_ip_address(name, region):
-    return run(['gcloud', 'compute', 'addresses', 'delete', name, '--region', region])
+    return run(['gcloud', 'compute', 'addresses', 'delete', '--region', region, name], input='yes\n')
 
 
 SSH_KEY_PATH = os.path.expanduser('~/.ssh/google_compute_engine')
@@ -121,11 +121,9 @@ def delete(machine):
     p = _delete_machine(machine.name, machine.zone)
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)
-
     p = _release_ip_address(machine.name, _zone_region(machine.zone))
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)
-
     p = _delete_firewall(machine.name)
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)

@@ -3,3 +3,4 @@ __pycache__
 /*.txt
 /*.py
 .pytest_cache
+dist
