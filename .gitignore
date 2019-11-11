@@ -4,3 +4,5 @@ __pycache__
 /*.py
 .pytest_cache
 dist
+build
+python_rc.egg-info
