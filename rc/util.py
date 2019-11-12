@@ -108,3 +108,20 @@ def go(func, *args, **kwargs):
 
 def pmap(func, *iterables, timeout=None):
     return list(executor.map(func, *iterables, timeout=timeout))
+
+
+def print_stream(q, *, prefix):
+    return handle_stream(q, stdout_handler=lambda line: print(prefix, 'STDOUT |', line, end=''),
+                         stderr_handler=lambda line: print(
+                             prefix, 'STDERR |', line, end=''),
+                         exit_handler=lambda exitcode: print(prefix, 'EXIT CODE |', exitcode, end=''))
+
+
+def save_stream_to_file(q, *, path, name):
+    with open(os.path.join(path, name+'.stdout'), 'w') as stdout:
+        with open(os.path.join(path, name+'.stderr'), 'w') as stderr:
+            with open(os.path.join(path, name+'.exitcode'), 'w') as exitcode:
+                return handle_stream(q, stdout_handler=lambda line: stdout.write(line),
+                                     stderr_handler=lambda line: stderr.write(
+                                         line),
+                                     exit_handler=lambda ec: exitcode.write(ec))

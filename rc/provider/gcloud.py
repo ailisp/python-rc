@@ -1,5 +1,5 @@
 from rc.util import run
-from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException
+from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException, MachineChangeTypeException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -152,3 +152,10 @@ def status(machine):
     p = run(['gcloud', 'compute', 'instances', 'list', '--format',
              'value(status)', '--filter', 'name=' + machine.name])
     return p.stdout.strip()
+
+
+def change_type(machine, new_type):
+    p = run(['gcloud', 'compute', 'instances', 'set-machine-type', machine.name,
+             '--zone', zone, '--machine-type', new_type])
+    if p.returncode != 0:
+        raise MachineChangeTypeException(p.stderr)

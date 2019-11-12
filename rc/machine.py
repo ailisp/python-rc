@@ -1,6 +1,16 @@
 from rc.exception import UploadException, DownloadException, SSHException
 from io import StringIO
-from rc.util import run
+from rc.util import run, run_stream, convert_list_command_to_str
+
+
+def tmuxize(cmd):
+    result = StringIO()
+    for c in cmd:
+        if c == "'":
+            result.write("\"'\" ")
+        else:
+            result.write(f"'{c}' ")
+    return result.getvalue()
 
 
 class Machine:
@@ -37,21 +47,36 @@ class Machine:
     def delete(self):
         return self.provider.delete(self)
 
+    def change_type(self):
+        return self.provider.change_type(self)
+
     def upload(self, local_path, machine_path):
-        p = run(['scp', '-o', 'StrictHostKeyChecking=no',
-                 '-i', self.ssh_key_path, '-r', local_path, self.username+'@'+self.ip+':'+machine_path])
+        p = run(
+            f'scp -o StrictHostKeyChecking=no -i {self.ssh_key_path} -r {local_path} {self.username}@{self.ip}:{machine_path}')
         if p.returncode != 0:
             raise UploadException(p.stderr)
         return p
 
-    def download(self, *, machine_path, local_path):
-        p = run(['scp', '-o', 'StrictHostKeyChecking=no',
-                 '-i', self.ssh_key_path, '-r', self.username + '@' + self.ip + ':' + machine_path, local_path])
+    def download(self, machine_path, local_path):
+        p = run(
+            f'scp -o StrictHostKeyChecking=no -i {self.ssh_key_path} -r {self.username}@{self.ip}:{machine_path} {local_path}')
         if p.returncode != 0:
             raise DownloadException(p.stderr)
         return p
 
+    def _ssh_shell(self):
+        return ['ssh', '-o', 'StrictHostKeyChecking=no',
+                '-i', self.ssh_key_path, self.username + '@' + self.ip, '--']
+
     def run(self, cmd, *, timeout=None, input=None):
-        ssh_shell = ['ssh', '-o', 'StrictHostKeyChecking=no',
-                     '-i', self.ssh_key_path, self.username + '@' + self.ip, '--']
-        return run(cmd, shell=ssh_shell, timeout=timeout, input=input)
+        return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
+
+    def run_stream(self, cmd, input=None):
+        return run_stream(cmd, shell=self._ssh_shell(), input=input)
+
+    def run_detach_tmux(self, cmd: str, *, name='python-rc', log='/tmp/python-rc.log'):
+        return self.run(f"tmux new -s {name} -d '{cmd}' \\; pipe-pane 'cat > {log}'")
+
+    def kill_detach_tmux(self, name='python-rc'):
+        return self.run(f"tmux kill-session -t {name}")
+

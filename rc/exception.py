@@ -36,3 +36,7 @@ class MachineNotRunningException(RcException):
 
 class RunException(RcException):
     pass
+
+
+class MachineChangeTypeException(RcException):
+    pass
