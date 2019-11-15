@@ -1,6 +1,8 @@
 from rc import run, running, run_stream, handle_stream, STDERR, STDOUT, EXIT, print_stream, save_stream_to_file, gcloud
 import contextlib
 from io import StringIO
+import time
+
 
 def test_run_sh_syntax():
     assert run(['ls', '~']).returncode == 0
@@ -20,7 +22,7 @@ echo hello world
     assert run('python', input='''
 print('hello world')
 print('aaa')
-'''), stdout.strip() == 'hello world\naaa'
+''').stdout.strip() == 'hello world\naaa'
 
 
 def test_run_stream():

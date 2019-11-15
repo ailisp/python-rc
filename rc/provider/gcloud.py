@@ -1,5 +1,5 @@
 from rc.util import run
-from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException, MachineChangeTypeException
+from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException, MachineChangeTypeException, MachineNotReadyException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -30,6 +30,14 @@ def _reserve_ip_address(ip, name, region):
 def _delete_firewall(name):
     return run(['gcloud', 'compute', 'firewall-rules', 'delete',
                 name], input='yes\n')
+
+
+def _address_exist(name, region):
+    return run(['gcloud', 'compute', 'addresses', 'describe', '--region', region, name]).returncode == 0
+
+
+def _firewall_exist(name):
+    return run(['gcloud', 'compute', 'firewall-rules', 'describe', name]).returncode == 0
 
 
 def _release_ip_address(name, region):
@@ -83,6 +91,13 @@ def _wait_bootup(name):
         raise MachineNotRunningException(status)
 
 
+@retry(MachineNotReadyException)
+def _wait_ssh(machine):
+    p = machine.run('echo a')
+    if p.returncode != 0:
+        raise MachineNotReadyException(p.stderr)
+
+
 def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, preemptible=False, firewall_allows):
     args = [name]
     args += ['--machine-type', machine_type]
@@ -96,6 +111,8 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
     if preemptible:
         args += ['--preemptible']
 
+    if _firewall_exist(name):
+        _delete_firewall(name)
     p = _create_firewall(name=name, allows=firewall_allows)
     if p.returncode != 0:
         raise MachineCreationException(p.stderr)
@@ -107,26 +124,33 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
 
     _wait_bootup(name)
 
-    ip = _get_ip(name)
-    p = _reserve_ip_address(ip, name, _zone_region(zone))
-    if p.returncode != 0:
-        _delete_firewall(name)
-        _delete_machine(name, zone)
-        raise MachineCreationException(p.stderr)
-
-    return Machine(provider=gcloud_provider, name=name, zone=zone, ip=ip, username=_get_username(), ssh_key_path=SSH_KEY_PATH)
+    if not preemptible:
+        if _address_exist(name, _zone_region(zone)):
+            _release_ip_address(name, _zone_region(zone))
+        ip = _get_ip(name)
+        p = _reserve_ip_address(ip, name, _zone_region(zone))
+        if p.returncode != 0:
+            _delete_firewall(name)
+            _delete_machine(name, zone)
+            raise MachineCreationException(p.stderr)
+    machine = Machine(provider=gcloud_provider, name=name, zone=zone,
+                      ip=ip, username=_get_username(), ssh_key_path=SSH_KEY_PATH)
+    _wait_ssh(machine)
+    return machine
 
 
 def delete(machine):
     p = _delete_machine(machine.name, machine.zone)
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)
-    p = _release_ip_address(machine.name, _zone_region(machine.zone))
-    if p.returncode != 0:
-        raise MachineDeletionException(p.stderr)
-    p = _delete_firewall(machine.name)
-    if p.returncode != 0:
-        raise MachineDeletionException(p.stderr)
+    if _address_exist(machine.name, _zone_region(machine.zone)):
+        p = _release_ip_address(machine.name, _zone_region(machine.zone))
+        if p.returncode != 0:
+            raise MachineDeletionException(p.stderr)
+    if _firewall_exist(machine.name):
+        p = _delete_firewall(machine.name)
+        if p.returncode != 0:
+            raise MachineDeletionException(p.stderr)
 
 
 def _delete_machine(name, zone):
@@ -156,6 +180,6 @@ def status(machine):
 
 def change_type(machine, new_type):
     p = run(['gcloud', 'compute', 'instances', 'set-machine-type', machine.name,
-             '--zone', zone, '--machine-type', new_type])
+             '--zone', machine.zone, '--machine-type', new_type])
     if p.returncode != 0:
         raise MachineChangeTypeException(p.stderr)

@@ -40,3 +40,7 @@ class RunException(RcException):
 
 class MachineChangeTypeException(RcException):
     pass
+
+
+class MachineNotReadyException(RcException):
+    pass

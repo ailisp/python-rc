@@ -1,16 +1,6 @@
-from rc.exception import UploadException, DownloadException, SSHException
+from rc.exception import UploadException, DownloadException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str
-
-
-def tmuxize(cmd):
-    result = StringIO()
-    for c in cmd:
-        if c == "'":
-            result.write("\"'\" ")
-        else:
-            result.write(f"'{c}' ")
-    return result.getvalue()
 
 
 class Machine:
@@ -79,4 +69,3 @@ class Machine:
 
     def kill_detach_tmux(self, name='python-rc'):
         return self.run(f"tmux kill-session -t {name}")
-
