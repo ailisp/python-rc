@@ -17,9 +17,13 @@ def _zone_region(zone):
 
 
 def _create_firewall(name, allows):
+    if allows:
+        allow_param = ['--allow', ','.join(allows)]
+    else:
+        allow_param = ['--allow', 'tcp:22']
+
     return run(['gcloud', 'compute', 'firewall-rules', 'create',
-                name, '--target-tags', name,
-                '--allow', ','.join(allows)])
+                name, '--target-tags', name, *allow_param])
 
 
 def _reserve_ip_address(ip, name, region):
