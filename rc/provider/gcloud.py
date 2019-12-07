@@ -102,7 +102,7 @@ def _wait_ssh(machine):
         raise MachineNotReadyException(p.stderr)
 
 
-def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, preemptible=False, firewall_allows):
+def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None, preemptible=False, firewall_allows):
     args = [name]
     args += ['--machine-type', machine_type]
     args += ['--boot-disk-size', disk_size]
@@ -112,6 +112,8 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
     if image:
         args += ['--image', image]
     args += ['--zone', zone]
+    if min_cpu_platform:
+        args += ['--min-cpu-platform', min_cpu_platform]
     if preemptible:
         args += ['--preemptible']
 
