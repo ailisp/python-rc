@@ -128,10 +128,10 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
 
     _wait_bootup(name)
 
+    ip = _get_ip(name)
     if not preemptible:
         if _address_exist(name, _zone_region(zone)):
             _release_ip_address(name, _zone_region(zone))
-        ip = _get_ip(name)
         p = _reserve_ip_address(ip, name, _zone_region(zone))
         if p.returncode != 0:
             _delete_firewall(name)
