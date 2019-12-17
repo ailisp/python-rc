@@ -22,6 +22,7 @@ def _create_group(group_name, location):
 
 
 def _delete_group(group_name):
+    # Very slow
     return run(['az', 'group', 'delete', '-n', group_name, '--yes'])
 
 
@@ -61,8 +62,11 @@ def delete(machine):
 def get(name):
     p = run(['az', 'vm', 'list-ip-addresses', '-n', name, '-g', name])
     if p.returncode == 0:
-        ip_address = json.loads(
-            p.stdout)[0]['virtualMachine']['network']['publicIpAddresses'][0]['ipAddress']
+        res = json.loads(p.stdout)
+        if not res:
+            return None
+        ip_address = res[
+            0]['virtualMachine']['network']['publicIpAddresses'][0]['ipAddress']
         return Machine(provider=azure_provider, name=name, zone=None,
                        ip=ip_address, username=os.getlogin(), ssh_key_path=SSH_KEY_PATH)
     else:

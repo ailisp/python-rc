@@ -44,3 +44,7 @@ class MachineChangeTypeException(RcException):
 
 class MachineNotReadyException(RcException):
     pass
+
+
+class SaveImageException(RcException):
+    pass
