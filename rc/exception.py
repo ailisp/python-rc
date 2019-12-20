@@ -48,3 +48,7 @@ class MachineNotReadyException(RcException):
 
 class SaveImageException(RcException):
     pass
+
+
+class DeleteImageException(RcException):
+    pass

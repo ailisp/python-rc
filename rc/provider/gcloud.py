@@ -1,5 +1,7 @@
 from rc.util import run
-from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException
+from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
+    MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
+    DeleteImageException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -191,9 +193,9 @@ def change_type(machine, new_type):
         raise MachineChangeTypeException(p.stderr)
 
 
-def save_image(machine, *, image_family=None, image, description=None):
+def save_image(machine, image, *, image_family=None, description=None):
     command = ['gcloud', 'compute', 'images', 'create', image, '--source-disk',
-               machine.name, '--source-disk-zone', machine.zone, '--storage-location', 'us']
+               machine.name, '--source-disk-zone', machine.zone]
     if image_family:
         command += ['--family', image_family]
     if description:
@@ -201,3 +203,10 @@ def save_image(machine, *, image_family=None, image, description=None):
     p = run(command)
     if p.returncode != 0:
         raise SaveImageException(p.stderr)
+
+
+def delete_image(image):
+    command = ['gcloud', 'compute', 'images', 'delete', image]
+    p = run(command)
+    if p.returncode != 0:
+        raise DeleteImageException(p.stderr)
