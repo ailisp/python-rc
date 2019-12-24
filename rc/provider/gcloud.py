@@ -1,5 +1,7 @@
 from rc.util import run
-from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, MachineDeletionException, MachineChangeTypeException, MachineNotReadyException
+from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
+    MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
+    DeleteImageException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -102,7 +104,7 @@ def _wait_ssh(machine):
         raise MachineNotReadyException(p.stderr)
 
 
-def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, preemptible=False, firewall_allows):
+def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None, preemptible=False, firewall_allows):
     args = [name]
     args += ['--machine-type', machine_type]
     args += ['--boot-disk-size', disk_size]
@@ -112,6 +114,8 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
     if image:
         args += ['--image', image]
     args += ['--zone', zone]
+    if min_cpu_platform:
+        args += ['--min-cpu-platform', min_cpu_platform]
     if preemptible:
         args += ['--preemptible']
 
@@ -128,10 +132,10 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
 
     _wait_bootup(name)
 
+    ip = _get_ip(name)
     if not preemptible:
         if _address_exist(name, _zone_region(zone)):
             _release_ip_address(name, _zone_region(zone))
-        ip = _get_ip(name)
         p = _reserve_ip_address(ip, name, _zone_region(zone))
         if p.returncode != 0:
             _delete_firewall(name)
@@ -187,3 +191,22 @@ def change_type(machine, new_type):
              '--zone', machine.zone, '--machine-type', new_type])
     if p.returncode != 0:
         raise MachineChangeTypeException(p.stderr)
+
+
+def save_image(machine, image, *, image_family=None, description=None):
+    command = ['gcloud', 'compute', 'images', 'create', image, '--source-disk',
+               machine.name, '--source-disk-zone', machine.zone]
+    if image_family:
+        command += ['--family', image_family]
+    if description:
+        command += ['--description', description]
+    p = run(command)
+    if p.returncode != 0:
+        raise SaveImageException(p.stderr)
+
+
+def delete_image(image):
+    command = ['gcloud', 'compute', 'images', 'delete', image]
+    p = run(command)
+    if p.returncode != 0:
+        raise DeleteImageException(p.stderr)
