@@ -70,5 +70,5 @@ class Machine:
     def kill_detach_tmux(self, name='python-rc'):
         return self.run(f"tmux kill-session -t {name}")
 
-    def save_image(self, **kwargs):
-        return self.provider.save_image(self, **kwargs)
+    def save_image(self, image, **kwargs):
+        return self.provider.save_image(self, image, **kwargs)
