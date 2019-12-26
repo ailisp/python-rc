@@ -1,5 +1,6 @@
 from rc.util import run
-from rc.exception import MachineCreationException, MachineDeletionException
+from rc.exception import MachineCreationException, MachineDeletionException, \
+    MachineShutdownException, MachineBootupException, SaveImageException
 from rc.machine import Machine
 import json
 import sys
@@ -71,3 +72,24 @@ def get(name):
                        ip=ip_address, username=os.getlogin(), ssh_key_path=SSH_KEY_PATH)
     else:
         return None
+
+
+def shutdown(machine):
+    p = run(['az', 'vm', 'stop',
+             '-n', machine.name, '-g', machine.name])
+    if p.returncode != 0:
+        raise MachineShutdownException(p.stderr)
+
+
+def bootup(machine):
+    p = run(['az', 'vm', 'start',
+             '-n', machine.name, '-g', machine.name])
+    if p.returncode != 0:
+        raise MachineBootupException(p.stderr)
+
+
+def save_image(machine, image, *, group):
+    p = run(['az', 'image', 'create', '-n', image, '-g',
+             group if group else machine.name, '--source', machine.name])
+    if p.returncode != 0:
+        raise SaveImageException(p.stderr)
