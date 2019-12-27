@@ -10,4 +10,7 @@ pack:
 upload:
 	pipenv run twine upload dist/*
 
-.PHONY: install test pack upload
+clean:
+	rm -rf dist
+
+.PHONY: install test pack upload clean
