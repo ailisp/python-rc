@@ -52,3 +52,11 @@ class SaveImageException(RcException):
 
 class DeleteImageException(RcException):
     pass
+
+
+class FirewallRuleCreationException(RcException):
+    pass
+
+
+class FirewallRuleDeleteionException(RcException):
+    pass

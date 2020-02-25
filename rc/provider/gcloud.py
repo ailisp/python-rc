@@ -1,7 +1,7 @@
 from rc.util import run
 from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
     MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
-    DeleteImageException
+    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -18,7 +18,7 @@ def _zone_region(zone):
     return zone[:-2]
 
 
-def _create_firewall(name, allows):
+def create_firewall(name, allows=None):
     if allows:
         allow_param = ['--allow', ','.join(allows)]
     else:
@@ -33,7 +33,7 @@ def _reserve_ip_address(ip, name, region):
                 'create', name, '--addresses', ip, '--region', region])
 
 
-def _delete_firewall(name):
+def delete_firewall(name):
     return run(['gcloud', 'compute', 'firewall-rules', 'delete',
                 name], input='yes\n')
 
@@ -42,7 +42,7 @@ def _address_exist(name, region):
     return run(['gcloud', 'compute', 'addresses', 'describe', '--region', region, name]).returncode == 0
 
 
-def _firewall_exist(name):
+def firewall_exist(name):
     return run(['gcloud', 'compute', 'firewall-rules', 'describe', name]).returncode == 0
 
 
@@ -104,7 +104,8 @@ def _wait_ssh(machine):
         raise MachineNotReadyException(p.stderr)
 
 
-def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None, preemptible=False, firewall_allows):
+def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None,
+           preemptible=False, firewall_allows=None, reserve_ip=True, firewalls=None):
     args = [name]
     args += ['--machine-type', machine_type]
     args += ['--boot-disk-size', disk_size]
@@ -114,31 +115,38 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
     if image:
         args += ['--image', image]
     args += ['--zone', zone]
+
     if min_cpu_platform:
         args += ['--min-cpu-platform', min_cpu_platform]
     if preemptible:
         args += ['--preemptible']
 
-    if _firewall_exist(name):
-        _delete_firewall(name)
-    p = _create_firewall(name=name, allows=firewall_allows)
-    if p.returncode != 0:
-        raise MachineCreationException(p.stderr)
+    if firewall_allows:
+        if firewall_exist(name):
+            delete_firewall(name)
+        p = create_firewall(name=name, allows=firewall_allows)
+        if p.returncode != 0:
+            raise MachineCreationException(p.stderr)
+        args += ['--tags', name]
+    elif firewalls:
+        args += ['--tags', ','.join(firewalls)]
 
     p = run(['gcloud', 'compute', 'instances', 'create', *args])
     if p.returncode != 0:
-        _delete_firewall(name)
+        if firewall_allows:
+            delete_firewall(name)
         raise MachineCreationException(p.stderr)
 
     _wait_bootup(name)
 
     ip = _get_ip(name)
-    if not preemptible:
+    if not preemptible and reserve_ip:
         if _address_exist(name, _zone_region(zone)):
             _release_ip_address(name, _zone_region(zone))
         p = _reserve_ip_address(ip, name, _zone_region(zone))
         if p.returncode != 0:
-            _delete_firewall(name)
+            if firewall_allows:
+                delete_firewall(name)
             _delete_machine(name, zone)
             raise MachineCreationException(p.stderr)
     machine = Machine(provider=gcloud_provider, name=name, zone=zone,
@@ -155,8 +163,8 @@ def delete(machine):
         p = _release_ip_address(machine.name, _zone_region(machine.zone))
         if p.returncode != 0:
             raise MachineDeletionException(p.stderr)
-    if _firewall_exist(machine.name):
-        p = _delete_firewall(machine.name)
+    if firewall_exist(machine.name):
+        p = delete_firewall(machine.name)
         if p.returncode != 0:
             raise MachineDeletionException(p.stderr)
 
@@ -178,6 +186,7 @@ def bootup(machine):
              machine.name, '--zone', machine.zone])
     if p.returncode != 0:
         raise MachineShutdownException(p.stderr)
+    _wait_ssh(machine)
 
 
 def status(machine):
