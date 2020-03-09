@@ -56,7 +56,7 @@ class Machine:
 
     def _ssh_shell(self):
         return ['ssh', '-o', 'StrictHostKeyChecking=no',
-                '-i', self.ssh_key_path, self.username + '@' + self.ip, '--']
+                *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
     def run(self, cmd, *, timeout=None, input=None):
         return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
