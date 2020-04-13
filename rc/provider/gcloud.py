@@ -110,7 +110,7 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
     args += ['--machine-type', machine_type]
     args += ['--boot-disk-size', disk_size]
     if disk_type:
-        args += ['--disk-type', disk_type]
+        args += ['--boot-disk-type', disk_type]
     if image_family:
         args += ['--image-family', image_family]
     args += ['--image-project', image_project]
