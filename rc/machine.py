@@ -40,16 +40,29 @@ class Machine:
     def change_type(self):
         return self.provider.change_type(self)
 
-    def upload(self, local_path, machine_path):
-        p = run(
-            f'scp -o StrictHostKeyChecking=no -i {self.ssh_key_path} -r {local_path} {self.username}@{self.ip}:{machine_path}')
+    def upload(self, local_path, machine_path, switch_user=None):
+        if switch_user:
+            rsync = f'''--rsync-path='sudo -u {switch_user} rsync' '''
+        else:
+            rsync = ''
+
+        p = run(f'''
+rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
+    {rsync} --progress {local_path} {self.username}@{self.ip}:{machine_path}
+''')
         if p.returncode != 0:
             raise UploadException(p.stderr)
         return p
 
-    def download(self, machine_path, local_path):
-        p = run(
-            f'scp -o StrictHostKeyChecking=no -i {self.ssh_key_path} -r {self.username}@{self.ip}:{machine_path} {local_path}')
+    def download(self, machine_path, local_path, sudo=True):
+        if sudo:
+            rsync = '''--rsync-path='sudo rsync' '''
+        else:
+            rsync = ''
+        p = run(f'''
+rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
+    {rsync} --progress {self.username}@{self.ip}:{machine_path} {local_path}
+''')
         if p.returncode != 0:
             raise DownloadException(p.stderr)
         return p
