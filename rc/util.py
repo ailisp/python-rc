@@ -5,11 +5,17 @@ from collections import namedtuple
 import os
 from typing import Union, List
 import io
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-RunResult = namedtuple('RunResult', ['stdout', 'stderr', 'returncode'])
+_RunResult = namedtuple('_RunResult', ['stdout', 'stderr', 'returncode'])
+
+
+class RunResult(_RunResult):
+    @property
+    def exitcode(self):
+        return self.returncode
 
 
 def convert_list_command_to_str(cmd: List[str]) -> str:
@@ -25,26 +31,73 @@ def convert_list_command_to_str(cmd: List[str]) -> str:
     return cmd_str.getvalue()
 
 
-def run(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, timeout=None):
-    p = running(cmd, shell=shell, input=input)
+def run(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, timeout=None, text=True):
+    p = running(cmd, shell=shell, input=input, text=text)
     stdout, stderr = p.communicate(timeout=timeout)
     return RunResult(returncode=p.returncode, stdout=stdout, stderr=stderr)
 
 
-def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None):
+def bash(script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False, run_shell=['/bin/sh', '-c']):
+    cmd = 'bash '
+    if login:
+        cmd += '-l '
+    if interactive:
+        cmd += '-i '
+    if flag:
+        script = flag + '\n' + script
+
+    return run(cmd, input=script, timeout=timeout, shell=run_shell)
+
+
+def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail', run_shell=['/bin/sh', '-c']):
+    cmd = 'sudo '
+    if user != 'root':
+        cmd += '-u ' + user + ' '
+    if shell is None:
+        cmd += '-l '
+    else:
+        cmd += '-s ' + shell + ' '
+    if flag:
+        script = flag + '\n' + script
+    return run(cmd, input=script, timeout=timeout, shell=run_shell)
+
+
+def python(script, *, timeout=None, python='python', su=None, run_shell=['/bin/sh', '-c']):
+    if su:
+        return sudo(script, flag='', shell=python, timeout=timeout, run_shell=run_shell)
+    else:
+        return run(python, input=script, timeout=timeout, run_shell=run_shell)
+
+
+def python2(script, **kwargs):
+    return python(script, **kwargs)
+
+
+def python3(script, **kwargs):
+    return python(script, **kwargs)
+
+
+def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, text=True):
     if type(cmd) is list:
         cmd = convert_list_command_to_str(cmd)
     try:
+        if not shell:
+            shell = []
         p = subprocess.Popen([*shell, cmd], stdin=subprocess.PIPE if input else None,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=text)
         if input:
             p.stdin.write(input)
             p.stdin.close()
             p.stdin = None
         return p
     except:
-        raise RunException(sys.exc_info()[0])
+        e = sys.exc_info()
+        # print(e[0].__name__)
+        # print(e[1])
+        # import traceback
+        # traceback.print_exception(e[2])
+        raise RunException(e[1]) from None
 
 
 STDOUT = 1
@@ -52,8 +105,8 @@ STDERR = 2
 EXIT = 3
 
 
-def run_stream(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None):
-    p = running(cmd, shell=shell, input=input)
+def run_stream(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, text=True):
+    p = running(cmd, shell=shell, input=input, text=text)
     q = Queue()
 
     def queue_stdout():
@@ -125,3 +178,16 @@ def save_stream_to_file(q, *, path, name):
                                      stderr_handler=lambda line: stderr.write(
                                          line),
                                      exit_handler=lambda ec: exitcode.write(ec))
+
+
+print_lock = Lock()
+
+
+def p(*args):
+    with print_lock:
+        print(*args, flush=True)
+
+
+def ep(*args):
+    with print_lock:
+        print(*args, file=sys.stderr, flush=True)

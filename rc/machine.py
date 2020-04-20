@@ -1,4 +1,4 @@
-from rc.exception import UploadException, DownloadException
+from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str
 
@@ -15,7 +15,7 @@ class Machine:
     def __eq__(self, other):
         return (self.provider, self.zone, self.ip, self.username, self.ssh_key_path) == (other.provider, other.zone, other.ip, other.username, other.ssh_key_path)
 
-    def __str__(self):
+    def __repr__(self):
         return 'Machine(provider={provider}, name={name}, zone={zone}, ip={ip}, username={username}, ssh_key_path={ssh_key_path})'.format(
             provider=self.provider,
             name=self.name,
@@ -71,11 +71,31 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return ['ssh', '-o', 'StrictHostKeyChecking=no',
                 *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
+    def running(self, cmd, *, input=None, timeout=None):
+        return running(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
+
     def run(self, cmd, *, timeout=None, input=None):
         return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
 
     def run_stream(self, cmd, input=None):
         return run_stream(cmd, shell=self._ssh_shell(), input=input)
+
+    def sudo(self, script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail'):
+        return sudo(script, shell=shell, user=user, timeout=timeout, flag=flag,
+                    run_shell=self._ssh_shell())
+
+    def bash(self, script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False):
+        return bash(script, timeout=timeout, login=login, interactive=interactive, flag=flag,
+                    run_shell=self._ssh_shell())
+
+    def python(self, script, *, timeout=None, python='python', su=None):
+        return python(script, timeout=timeout, python=python, su=su, run_shell=self._ssh_shell())
+
+    def python2(self, script, **kwargs):
+        return python2(script, run_shell=self._ssh_shell(), **kwargs)
+
+    def python3(self, script, **kwargs):
+        return python3(script, run_shell=self._ssh_shell(), **kwargs)
 
     def run_detach_tmux(self, cmd: str, *, name='python-rc', log='/tmp/python-rc.log'):
         return self.run(f"tmux new -s {name} -d '{cmd}' \\; pipe-pane 'cat > {log}'")
@@ -85,3 +105,9 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
 
     def save_image(self, image, **kwargs):
         return self.provider.save_image(self, image, **kwargs)
+
+    @retry(MachineNotReadyException)
+    def wait_ssh(self):
+        p = self.run('echo a')
+        if p.returncode != 0:
+            raise MachineNotReadyException(p.stderr)

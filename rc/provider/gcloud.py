@@ -1,7 +1,7 @@
 from rc.util import run
 from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
     MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
-    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException
+    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException
 from rc.machine import Machine
 import sys
 from retry import retry
@@ -97,13 +97,6 @@ def _wait_bootup(name):
         raise MachineNotRunningException(status)
 
 
-@retry(MachineNotReadyException)
-def _wait_ssh(machine):
-    p = machine.run('echo a')
-    if p.returncode != 0:
-        raise MachineNotReadyException(p.stderr)
-
-
 def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None,
            preemptible=False, firewall_allows=None, reserve_ip=True, firewalls=None, disk_type=None):
     args = [name]
@@ -153,7 +146,7 @@ def create(*, name, machine_type, disk_size, image_project, image_family=None, i
             raise MachineCreationException(p.stderr)
     machine = Machine(provider=gcloud_provider, name=name, zone=zone,
                       ip=ip, username=_get_username(), ssh_key_path=SSH_KEY_PATH)
-    _wait_ssh(machine)
+    machine.wait_ssh()
     return machine
 
 
@@ -187,8 +180,8 @@ def bootup(machine):
     p = run(['gcloud', 'compute', 'instances', 'start',
              machine.name, '--zone', machine.zone])
     if p.returncode != 0:
-        raise MachineShutdownException(p.stderr)
-    _wait_ssh(machine)
+        raise MachineBootupException(p.stderr)
+    machine.wait_ssh()
 
 
 def status(machine):
