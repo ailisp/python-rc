@@ -1,6 +1,7 @@
 from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str
+from retry import retry
 
 
 class Machine:

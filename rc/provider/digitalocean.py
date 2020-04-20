@@ -8,6 +8,7 @@ import re
 import os
 from functools import lru_cache
 import json
+import time
 
 digitalocean_provider = sys.modules[__name__]
 
@@ -17,7 +18,7 @@ SSH_KEY_PATH = os.path.expanduser('~/.ssh/id_rsa')
 @lru_cache(maxsize=1)
 def _digitalocean_ssh_key_fingerprint():
     p = run('ssh-keygen -E md5 -lf ~/.ssh/id_rsa.pub')
-    fingerprint = p.stdoutsplit(' ')[1][4:]
+    fingerprint = p.stdout.split(' ')[1][4:]
     p = run(f'doctl compute ssh-key get {fingerprint}')
     if p.returncode != 0:
         p = run(f'doctl compute ssh-key import python-rc ~/.ssh/id_rsa.pub')
@@ -38,9 +39,14 @@ def list():
     return result
 
 
+def _exist(id_):
+    p = run(f'doctl compute droplet get {id_}')
+    return p.returncode == 0
+
+
 def get(name):
     p = run(
-        f'doctl compute droplet list --no-header --format "Region,Name,PublicIPv4,ID')
+        f'doctl compute droplet list --no-header --format Region,Name,PublicIPv4,ID')
     lines = p.stdout.strip('\n').split('\n')
     for line in lines:
         zone, name_, ip, id_ = re.split(r'\s+', line)
@@ -85,6 +91,9 @@ def create(name, *, image, region, size, tags=None):
     # Available machine sizes:
     # doctl compute size list
     # Use slug to refer a machine size
+    machine = get(name)
+    if machine:
+        raise MachineCreationException(f'Machine {name} is already exist')
     cmd = f'doctl compute droplet create {name} --region {region} --size {size} --image {image} --ssh-keys {_digitalocean_ssh_key_fingerprint()}'
     if tags:
         cmd += ' --tag-names ' + ','.join(tags)
@@ -124,3 +133,11 @@ def delete_image(image):
             if p.returncode != 0:
                 raise DeleteImageException(p.stderr)
             return
+
+
+def delete(machine):
+    p = run(f'doctl compute droplet delete {machine.id} --force')
+    if p.returncode != 0:
+        raise MachineDeletionException(p.stderr)
+    while _exist(machine):
+        time.sleep(1)
