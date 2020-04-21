@@ -3,7 +3,7 @@ from rc.exception import MachineCreationException, MachineDeletionException, \
     MachineShutdownException, MachineBootupException, SaveImageException, MachineChangeTypeException, \
     DeleteImageException, FirewallRuleCreationException
 from rc.machine import Machine
-from rc.Firewall import Firewall
+from rc.firewall import Firewall
 import sys
 import re
 import os
