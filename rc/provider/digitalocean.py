@@ -158,9 +158,9 @@ def create_firewall(name, *, direction='in', action='allow', ports,
             rule += ',address:'.join(ips)
         rules.append(rule)
     rules = ' '.join(rules)
-    if direction = 'in':
+    if direction == 'in':
         cmd += f" --inbound-rules '{rules}'"
-    elif direction = 'out':
+    elif direction == 'out':
         cmd += f" --outbound-rules '{rules}'"
     else:
         raise FirewallRuleCreationException(
