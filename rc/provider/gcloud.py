@@ -1,15 +1,15 @@
+import re
+from functools import lru_cache
+import yaml
+import os
+from retry import retry
+import sys
+from rc.machine import Machine
 from rc.util import run
 from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
     MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
-    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException
-from rc.machine import Machine
-import sys
-from retry import retry
-import os
-import yaml
-from functools import lru_cache
-import re
-import sys
+    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException,
+RcException
 
 gcloud_provider = sys.modules[__name__]
 
@@ -222,3 +222,10 @@ def add_firewall(machine, firewall):
 
 def remove_firewall(machine, firewall):
     pass
+
+
+def set_project(project):
+    p = run(f'gcloud config set project {project}')
+    p = run(cmd)
+    if p.returncode != 0:
+        raise RcException(p.stderr)
