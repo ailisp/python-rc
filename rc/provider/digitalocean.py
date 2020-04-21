@@ -1,8 +1,9 @@
 from rc.util import run
 from rc.exception import MachineCreationException, MachineDeletionException, \
     MachineShutdownException, MachineBootupException, SaveImageException, MachineChangeTypeException, \
-    DeleteImageException
+    DeleteImageException, FirewallRuleCreationException
 from rc.machine import Machine
+from rc.Firewall import Firewall
 import sys
 import re
 import os
@@ -77,7 +78,7 @@ def shutdown(machine):
         raise MachineShutdownException(p.stderr)
 
 
-def create(name, *, image, region, size, tags=None):
+def create(name, *, image, region, size, firewall_names=None):
     # Available images:
     # user images: doctl compute snapshot list
     # digitalocean linux distro images: doctl compute image list-distribution
@@ -95,8 +96,8 @@ def create(name, *, image, region, size, tags=None):
     if machine:
         raise MachineCreationException(f'Machine {name} is already exist')
     cmd = f'doctl compute droplet create {name} --region {region} --size {size} --image {image} --ssh-keys {_digitalocean_ssh_key_fingerprint()}'
-    if tags:
-        cmd += ' --tag-names ' + ','.join(tags)
+    if firewall_names:
+        cmd += ' --tag-names ' + ','.join(firewall_names)
     cmd += ' --wait'
     p = run(cmd)
     if p.returncode != 0:
@@ -141,3 +142,33 @@ def delete(machine):
         raise MachineDeletionException(p.stderr)
     while _exist(machine):
         time.sleep(1)
+
+
+def create_firewall(name, *, direction='in', action='allow', ports,
+                    action='allow', ports, ips=['0.0.0.0/0']):
+    cmd = f'doctl compute firewall create {name} --tag-names {name}'
+    rules = []
+    for port in ports:
+        if port == 'icmp':
+            rule = 'protocol:icmp,address:'
+            rule += ',address:'.join(ips)
+        else:
+            protocol, port = port.split(':')
+            rule = f'protocol:{prototocol},port:{port},address:'
+            rule += ',address:'.join(ips)
+        rules.append(rule)
+    rules = ' '.join(rules)
+    if direction = 'in':
+        cmd += f" --inbound-rules '{rules}'"
+    elif direction = 'out':
+        cmd += f" --outbound-rules '{rules}'"
+    else:
+        raise FirewallRuleCreationException(
+            'direction must be either "in" or "out"')
+    if action != 'allow':
+        raise FirewallRuleCreationException(
+            'digitalocean only support "allow" rule, all other traffic will be blocked')
+    p = run(cmd)
+    if p.returncode != 0:
+        raise FirewallRuleCreationException(p.stderr)
+    return Firewall(name, provider=digitalocean_provider, direction=direction, action=action, ports=ports, ips=ips)
