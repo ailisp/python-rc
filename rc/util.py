@@ -54,7 +54,7 @@ def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefa
     if user != 'root':
         cmd += '-u ' + user + ' '
     if shell is None:
-        cmd += '-l '
+        cmd += '-i '
     else:
         cmd += '-s ' + shell + ' '
     if flag:

@@ -214,3 +214,11 @@ def delete_image(image):
     p = run(command)
     if p.returncode != 0:
         raise DeleteImageException(p.stderr)
+
+
+def add_firewall(machine, firewall):
+    pass
+
+
+def remove_firewall(machine, firewall):
+    pass

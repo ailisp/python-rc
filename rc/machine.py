@@ -1,6 +1,7 @@
 from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
-from rc.util import run, run_stream, convert_list_command_to_str
+from rc.util import run, run_stream, convert_list_command_to_str, \
+    bash, sudo, python, python2, python3
 from retry import retry
 
 
@@ -14,7 +15,7 @@ class Machine:
         self.ssh_key_path = ssh_key_path
 
     def __eq__(self, other):
-        return (self.provider, self.zone, self.ip, self.username, self.ssh_key_path) == (other.provider, other.zone, other.ip, other.username, other.ssh_key_path)
+        return (self.provider, self.name, self.zone, self.ip, self.username, self.ssh_key_path) == (other.provider, other.name, other.zone, other.ip, other.username, other.ssh_key_path)
 
     def __repr__(self):
         return 'Machine(provider={provider}, name={name}, zone={zone}, ip={ip}, username={username}, ssh_key_path={ssh_key_path})'.format(
@@ -41,9 +42,11 @@ class Machine:
     def change_type(self):
         return self.provider.change_type(self)
 
-    def upload(self, local_path, machine_path, switch_user=None):
-        if switch_user:
-            rsync = f'''--rsync-path='sudo -u {switch_user} rsync' '''
+    def upload(self, local_path, machine_path, switch_user=None, su=None):
+        if switch_user and not su:
+            su = switch_user
+        if su:
+            rsync = f'''--rsync-path='sudo -u {su} rsync' '''
         else:
             rsync = ''
 
@@ -112,3 +115,32 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         p = self.run('echo a')
         if p.returncode != 0:
             raise MachineNotReadyException(p.stderr)
+
+    def firewalls(self):
+        return self.provider.machine_firewalls(self)
+
+    def ensure_user(self, username, *, sudo=True, pubkey=True):
+        add_sudo = ''
+        if sudo:
+            add_sudo = f'echo "{username}  ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/{username}'
+        add_pubkey = ''
+        if username == 'root':
+            ssh_path = '/root/.ssh'
+        else:
+            ssh_path = f'/home/{username}/.ssh'
+        if pubkey is True:
+            pubkey = run(
+                f'ssh-keygen -y -f {self.ssh_key_path}').stdout.strip()
+        if pubkey:
+            add_pubkey = f'''sudo -u {username} mkdir -p {ssh_path}
+            if ! $(grep -Fxq '{pubkey}' {ssh_path}/authorized_keys); then
+                sudo -u {username} echo "{pubkey}" >> {ssh_path}/authorized_keys
+            fi
+            '''
+        cmd = f'''
+        useradd {username} --create-home --shell /bin/bash || true
+        {add_sudo}
+        {add_pubkey}
+        '''
+        p = self.sudo(cmd)
+        return p
