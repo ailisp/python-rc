@@ -144,7 +144,7 @@ def delete(machine):
         time.sleep(1)
 
 
-def create_firewall(name, *, direction='in', action='allow', ports,
+def create_firewall(name, *, direction='in', ports,
                     action='allow', ports, ips=['0.0.0.0/0']):
     cmd = f'doctl compute firewall create {name} --tag-names {name}'
     rules = []
