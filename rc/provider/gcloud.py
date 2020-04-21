@@ -8,8 +8,8 @@ from rc.machine import Machine
 from rc.util import run
 from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
     MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
-    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException,
-RcException
+    DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException, \
+    RcException
 
 gcloud_provider = sys.modules[__name__]
 
