@@ -8,6 +8,7 @@ import io
 from threading import Thread, Lock
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import signal
 
 _RunResult = namedtuple('_RunResult', ['stdout', 'stderr', 'returncode'])
 
@@ -85,7 +86,7 @@ def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, 
             shell = []
         p = subprocess.Popen([*shell, cmd], stdin=subprocess.PIPE if input else None,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             universal_newlines=text)
+                             universal_newlines=text, preexec_fn=os.setsid)
         if input:
             p.stdin.write(input)
             p.stdin.close()
@@ -191,3 +192,7 @@ def p(*args):
 def ep(*args):
     with print_lock:
         print(*args, file=sys.stderr, flush=True)
+
+
+def kill(p):
+    os.killpg(os.getpgid(p.pid), signal.SIGTERM)
