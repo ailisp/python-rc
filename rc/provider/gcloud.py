@@ -226,6 +226,5 @@ def remove_firewall(machine, firewall):
 
 def set_project(project):
     p = run(f'gcloud config set project {project}')
-    p = run(cmd)
     if p.returncode != 0:
         raise RcException(p.stderr)
