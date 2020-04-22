@@ -63,9 +63,9 @@ def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefa
     return run(cmd, input=script, timeout=timeout, shell=run_shell)
 
 
-def python(script, *, timeout=None, python='python', su=None, run_shell=['/bin/sh', '-c']):
-    if su:
-        return sudo(script, flag='', shell=python, timeout=timeout, run_shell=run_shell)
+def python(script, *, timeout=None, python='python', user=None, run_shell=['/bin/sh', '-c']):
+    if user:
+        return sudo(script, user=user, flag='', shell=python, timeout=timeout, run_shell=run_shell)
     else:
         return run(python, input=script, timeout=timeout, run_shell=run_shell)
 

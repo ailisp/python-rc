@@ -43,11 +43,10 @@ class Machine:
     def change_type(self):
         return self.provider.change_type(self)
 
-    def upload(self, local_path, machine_path, switch_user=None, su=None):
-        if switch_user and not su:
-            su = switch_user
-        if su:
-            rsync = f'''--rsync-path='sudo -u {su} rsync' '''
+    def upload(self, local_path, machine_path, switch_user=None, su=None, user=None):
+        user = user or su or switch_user
+        if user:
+            rsync = f'''--rsync-path='sudo -u {user} rsync' '''
         else:
             rsync = ''
 
@@ -112,8 +111,8 @@ echo $? > {exitcode}
         kill(p)
         print('done')
 
-    def python(self, script, *, timeout=None, python='python', su=None):
-        return python(script, timeout=timeout, python=python, su=su, run_shell=self._ssh_shell())
+    def python(self, script, *, timeout=None, python='python', user=None):
+        return python(script, timeout=timeout, python=python, user=user, run_shell=self._ssh_shell())
 
     def python2(self, script, **kwargs):
         return python2(script, run_shell=self._ssh_shell(), **kwargs)
@@ -165,7 +164,7 @@ echo $? > {exitcode}
         p = self.sudo(cmd)
         return p
 
-    def edit(self, path, content, append=False, su=None):
+    def edit(self, path, content, append=False, user=None):
         if append:
             op = '>>'
         else:
@@ -173,7 +172,7 @@ echo $? > {exitcode}
         cmd = f'''cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
 {content}
 c7a88caeb23f4ac0f377c59b703fb7f1091d0708'''
-        if su:
-            return self.sudo(cmd, su=su)
+        if user:
+            return self.sudo(cmd, user=user)
         else:
             return self.bash(cmd)
