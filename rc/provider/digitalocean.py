@@ -144,8 +144,7 @@ def delete(machine):
         time.sleep(1)
 
 
-def create_firewall(name, *, direction='in', ports,
-                    action='allow', ips=['0.0.0.0/0']):
+def create_firewall(name, *, direction='in', ports, ips=['0.0.0.0/0']):
     cmd = f'doctl compute firewall create {name} --tag-names {name}'
     rules = []
     for port in ports:
@@ -165,9 +164,6 @@ def create_firewall(name, *, direction='in', ports,
     else:
         raise FirewallRuleCreationException(
             'direction must be either "in" or "out"')
-    if action != 'allow':
-        raise FirewallRuleCreationException(
-            'digitalocean only support "allow" rule, all other traffic will be blocked')
     p = run(cmd)
     if p.returncode != 0:
         raise FirewallRuleCreationException(p.stderr)

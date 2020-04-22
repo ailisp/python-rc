@@ -1,8 +1,9 @@
 from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str, \
-    bash, sudo, python, python2, python3
+    bash, sudo, python, python2, python3, running
 from retry import retry
+import datetime
 
 
 class Machine:
@@ -75,8 +76,8 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return ['ssh', '-o', 'StrictHostKeyChecking=no',
                 *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
-    def running(self, cmd, *, input=None, timeout=None):
-        return running(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
+    def running(self, cmd, *, input=None):
+        return running(cmd, shell=self._ssh_shell(), input=input)
 
     def run(self, cmd, *, timeout=None, input=None):
         return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
@@ -91,6 +92,24 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
     def bash(self, script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False):
         return bash(script, timeout=timeout, login=login, interactive=interactive, flag=flag,
                     run_shell=self._ssh_shell())
+
+    def nohup(self, script, *, cmd='bash', stdout='/tmp/python-rc.log', stderr='/tmp/python-rc.log', exitcode='/tmp/python-rc.exitcode'):
+        ts = datetime.datetime.strftime(
+            datetime.datetime.utcnow(), '%Y%m%d_%H%M%S')
+        self.run(f'mkdir -p /tmp/python-rc/{ts}')
+        run(f'mkdir -p /tmp/python-rc/{ts}')
+        with open(f'/tmp/python-rc/{ts}/script.sh', 'w') as f:
+            f.write(script)
+        with open(f'/tmp/python-rc/{ts}/parent.sh', 'w') as f:
+            f.write(f'''
+cd ~
+{cmd} /tmp/python-rc/{ts}/script.sh >> {stdout} 2>> {stderr}
+echo $? > {exitcode}
+''')
+        self.upload(f'/tmp/python-rc/{ts}', f'/tmp/python-rc/')
+        print('prepared')
+        self.running(f'nohup bash /tmp/python-rc/{ts}/parent.sh')
+        print('done')
 
     def python(self, script, *, timeout=None, python='python', su=None):
         return python(script, timeout=timeout, python=python, su=su, run_shell=self._ssh_shell())
