@@ -170,10 +170,10 @@ echo $? > {exitcode}
             op = '>>'
         else:
             op = '>'
-        if su:
-            su = f'sudo -u {su} '
-        else:
-            su = ''
-        return self.bash(f'''{su}cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
+        cmd = f'''cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
 {content}
-c7a88caeb23f4ac0f377c59b703fb7f1091d0708''')
+c7a88caeb23f4ac0f377c59b703fb7f1091d0708'''
+        if su:
+            return self.sudo(cmd, su=su)
+        else:
+            return self.bash(cmd)
