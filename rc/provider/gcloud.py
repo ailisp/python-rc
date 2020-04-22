@@ -52,6 +52,14 @@ def _release_ip_address(name, region):
 
 SSH_KEY_PATH = os.path.expanduser('~/.ssh/google_compute_engine')
 
+if not os.path.exists(SSH_KEY_PATH):
+    print("There is no key at {}, creating new key.".format(SSH_KEY_PATH))
+    # Generate new ssh key to log in.
+    # WARNING: It will create a key with an empty passphrase.
+    run(["ssh-keygen", "-f", SSH_KEY_PATH, "-t", "rsa", "-N", '""'])
+    # Upload key
+    run(["gcloud", "compute", "os-login", "ssh-keys", "add", "--key-file={}.pub".format(SSH_KEY_PATH)])
+
 
 def list():
     p = run(['gcloud', 'compute', 'instances', 'list', '--format',
