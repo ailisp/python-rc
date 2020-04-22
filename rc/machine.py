@@ -1,7 +1,7 @@
 from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str, \
-    bash, sudo, python, python2, python3, running
+    bash, sudo, python, python2, python3, running, kill
 from retry import retry
 import datetime
 
@@ -108,7 +108,8 @@ echo $? > {exitcode}
 ''')
         self.upload(f'/tmp/python-rc/{ts}', f'/tmp/python-rc/')
         print('prepared')
-        self.running(f'nohup bash /tmp/python-rc/{ts}/parent.sh')
+        p = self.running(f'nohup bash /tmp/python-rc/{ts}/parent.sh')
+        kill(p)
         print('done')
 
     def python(self, script, *, timeout=None, python='python', su=None):
@@ -163,3 +164,16 @@ echo $? > {exitcode}
         '''
         p = self.sudo(cmd)
         return p
+
+    def edit(self, path, content, append=False, su=None):
+        if append:
+            op = '>>'
+        else:
+            op = '>'
+        if su:
+            su = f'sudo -u {su} '
+        else:
+            su = ''
+        self.bash(f'''{su}cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
+{content}
+c7a88caeb23f4ac0f377c59b703fb7f1091d0708''')
