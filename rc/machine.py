@@ -174,6 +174,6 @@ echo $? > {exitcode}
             su = f'sudo -u {su} '
         else:
             su = ''
-        self.bash(f'''{su}cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
+        return self.bash(f'''{su}cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
 {content}
 c7a88caeb23f4ac0f377c59b703fb7f1091d0708''')
