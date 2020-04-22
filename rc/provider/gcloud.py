@@ -228,3 +228,10 @@ def set_project(project):
     p = run(f'gcloud config set project {project}')
     if p.returncode != 0:
         raise RcException(p.stderr)
+
+
+def get_project():
+    p = run(f'gcloud config get-value project')
+    if p.returncode != 0:
+        raise RcException(p.stderr)
+    return p.stdout.strip()
