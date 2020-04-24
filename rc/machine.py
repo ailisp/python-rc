@@ -72,7 +72,7 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return p
 
     def _ssh_shell(self):
-        return ['ssh', '-o', 'StrictHostKeyChecking=no', '-t',
+        return ['ssh', '-o', 'StrictHostKeyChecking=no',
                 *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
     def running(self, cmd, *, input=None):
@@ -98,11 +98,11 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         ok(self.ensure_dir(f'/tmp/python-rc'))
         ok(self.edit(f'/tmp/python-rc/script_{ts}', script, user=user))
         print('here we go', datetime.datetime.now())
-        p = ok(self.python(f'''
-import subprocess
-p = subprocess.Popen('{cmd} /tmp/python-rc/script_{ts} >>{stdout} 2>>{stderr}; echo -n $? > {exitcode}', shell=True, stdin=None)
-open('{pid}', 'w').write(str(p.pid))
-''', user=user))
+        run_cmd = f'( {cmd} /tmp/python-rc/script_{ts} >>{stdout} 2>>{stderr} & echo -n $! > {pid}; wait $!; echo -n $? >{exitcode}) </dev/null >/dev/null 2>/dev/null &'
+        if user:
+            p = ok(self.sudo(run_cmd, user=user))
+        else:
+            p = ok(self.run(run_cmd))
         print(p.stdout)
         print('aaaaa', datetime.datetime.now())
 
