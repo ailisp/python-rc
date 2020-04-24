@@ -58,7 +58,8 @@ if not os.path.exists(SSH_KEY_PATH):
     # WARNING: It will create a key with an empty passphrase.
     run(["ssh-keygen", "-f", SSH_KEY_PATH, "-t", "rsa", "-N", '""'])
     # Upload key
-    run(["gcloud", "compute", "os-login", "ssh-keys", "add", "--key-file={}.pub".format(SSH_KEY_PATH)])
+    run(["gcloud", "compute", "os-login", "ssh-keys",
+         "add", "--key-file={}.pub".format(SSH_KEY_PATH)])
 
 
 def list():
@@ -105,7 +106,7 @@ def _wait_bootup(name):
         raise MachineNotRunningException(status)
 
 
-def create(*, name, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None,
+def create(name, *, project=None, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None,
            preemptible=False, firewall_allows=None, reserve_ip=True, firewalls=None, disk_type=None):
     args = [name]
     args += ['--machine-type', machine_type]

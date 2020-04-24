@@ -1,7 +1,7 @@
 from rc.exception import UploadException, DownloadException, MachineNotReadyException
 from io import StringIO
 from rc.util import run, run_stream, convert_list_command_to_str, \
-    bash, sudo, python, python2, python3, running, kill
+    bash, sudo, python, python2, python3, running, kill, ok
 from retry import retry
 import datetime
 
@@ -72,7 +72,7 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return p
 
     def _ssh_shell(self):
-        return ['ssh', '-o', 'StrictHostKeyChecking=no',
+        return ['ssh', '-o', 'StrictHostKeyChecking=no', '-t',
                 *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
     def running(self, cmd, *, input=None):
@@ -92,27 +92,22 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return bash(script, timeout=timeout, login=login, interactive=interactive, flag=flag,
                     run_shell=self._ssh_shell())
 
-    def nohup(self, script, *, cmd='bash', stdout='/tmp/python-rc.log', stderr='/tmp/python-rc.log', exitcode='/tmp/python-rc.exitcode'):
+    def run_bg(self, script, *, cmd='bash', stdout='/tmp/python-rc.log', stderr='/tmp/python-rc.log', exitcode='/tmp/python-rc.exitcode', pid='/tmp/python-rc.pid', user=None):
         ts = datetime.datetime.strftime(
             datetime.datetime.utcnow(), '%Y%m%d_%H%M%S')
-        self.run(f'mkdir -p /tmp/python-rc/{ts}')
-        run(f'mkdir -p /tmp/python-rc/{ts}')
-        with open(f'/tmp/python-rc/{ts}/script.sh', 'w') as f:
-            f.write(script)
-        with open(f'/tmp/python-rc/{ts}/parent.sh', 'w') as f:
-            f.write(f'''
-cd ~
-{cmd} /tmp/python-rc/{ts}/script.sh >> {stdout} 2>> {stderr}
-echo $? > {exitcode}
-''')
-        self.upload(f'/tmp/python-rc/{ts}', f'/tmp/python-rc/')
-        print('prepared')
-        p = self.running(f'nohup bash /tmp/python-rc/{ts}/parent.sh')
-        kill(p)
-        print('done')
+        ok(self.ensure_dir(f'/tmp/python-rc'))
+        ok(self.edit(f'/tmp/python-rc/script_{ts}', script, user=user))
+        print('here we go', datetime.datetime.now())
+        p = ok(self.python(f'''
+import subprocess
+p = subprocess.Popen('{cmd} /tmp/python-rc/script_{ts} >>{stdout} 2>>{stderr}; echo -n $? > {exitcode}', shell=True, stdin=None)
+open('{pid}', 'w').write(str(p.pid))
+''', user=user))
+        print(p.stdout)
+        print('aaaaa', datetime.datetime.now())
 
-    def python(self, script, *, timeout=None, python='python', user=None):
-        return python(script, timeout=timeout, python=python, user=user, run_shell=self._ssh_shell())
+    def python(self, script, *, timeout=None, python_path='python', user=None):
+        return python(script, timeout=timeout, python_path=python_path, user=user, run_shell=self._ssh_shell())
 
     def python2(self, script, **kwargs):
         return python2(script, run_shell=self._ssh_shell(), **kwargs)
@@ -169,9 +164,27 @@ echo $? > {exitcode}
             op = '>>'
         else:
             op = '>'
-        cmd = f'''cat {op} {path} <<c7a88caeb23f4ac0f377c59b703fb7f1091d0708
+        cmd = f"""cat {op} {path} <<'c7a88caeb23f4ac0f377c59b703fb7f1091d0708'
 {content}
-c7a88caeb23f4ac0f377c59b703fb7f1091d0708'''
+'c7a88caeb23f4ac0f377c59b703fb7f1091d0708'"""
+        if user:
+            return self.sudo(cmd, user=user)
+        else:
+            return self.bash(cmd)
+
+    def ensure_lines(self, path, lines, user=None):
+        pass
+
+    def read(self, path):
+        pass
+
+    def ensure_file(self):
+        pass
+
+    def ensure_dir(self, path, user=None, allow_write=True):
+        cmd = f'mkdir -p {path}'
+        if allow_write:
+            cmd += f'\nchmod a+w {path}'
         if user:
             return self.sudo(cmd, user=user)
         else:
