@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7fbd77dfaebda5af1d0ad6f1a38f0215930d934a0f8becbabd9a8958dcbb64c2"
+            "sha256": "76a239ff6a93adbb04db0b9f675d7a942d6ce00b1a9270b161e80229725ca39f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -30,6 +30,13 @@
             ],
             "index": "pypi",
             "version": "==8.2"
+        },
+        "libtmux": {
+            "hashes": [
+                "sha256:2acd86617203bc966b125d016526fb40503411a2281b55d9d970a487dc6e065a"
+            ],
+            "index": "pypi",
+            "version": "==0.8.2"
         },
         "py": {
             "hashes": [
@@ -198,6 +205,7 @@
                 "sha256:3479b861cc2b6407de5188695fa1a8d57e5072d7059322469b62628869b8e36e",
                 "sha256:d6c6b49683446d2407d2fe3acb7a368a77ff063f9182fe427da15d622adc24cf"
             ],
+            "markers": "sys_platform == 'linux'",
             "version": "==0.4.3"
         },
         "keyring": {

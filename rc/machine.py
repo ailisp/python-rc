@@ -28,6 +28,9 @@ class Machine:
             ssh_key_path=self.ssh_key_path
         )
 
+    def __str__(self):
+        return f"{self.provider.__name__.split('.')[-1]}." + self.name
+
     def status(self):
         return self.provider.status(self)
 

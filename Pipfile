@@ -13,6 +13,7 @@ retry = "*"
 PyYAML = "*"
 humanfriendly = "*"
 pyte = "*"
+libtmux = "*"
 
 [requires]
 python_version = "3.7"

@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+import argparse
+import sys
+import rc
+from rc import cli
+from rc.cli import config, execute
+
+config.create_config_dirs()
+parser = argparse.ArgumentParser('rc', '''
+rc <group name> command ...: execute command non interactively in group of machines
+rc <group name>/name_pattern1,... command ...: execute command non interactively in group of machines, but only subset that match pattern 
+rc <group name> @file: execute content of local file in group of machines
+rc tmux <group name>: launch a tmux that ssh to every instance in group of machines, input to one machine will be replicate to the group
+rc edit <group name>: create or edit machines in group
+rc cat <group name>: show machines in group
+rc ls: show defined groups
+rc rm <group name>: delete group definition (does not delete machines)
+rc rsync: parallel rsync
+rc ssh-config: generate ~/.ssh/config that can be used with ssh machine_name, scp, rsync, mosh, etc.
+''', 'python-rc cli, parallel execute command, download and upload files to machines')
+parser.add_argument('command', help='Subcommand to run')
+args = parser.parse_args(sys.argv[1:2])
+print(args.command)
+if args.command in ['edit', 'cat', 'ls', 'rm', 'rsync', 'tmux', 'ssh-config']:
+    getattr(cli, args.command)(sys.argv[2:])
+else:
+    assert len(sys.argv[2:]) > 0
+    group_ = args.command.split('/')
+    group_config_file = config.get(group_[0])
+    if group_config_file:
+        try:
+            print(group_)
+            if len(group_) > 1:
+                sub_machines = group_[1].split(',')
+            else:
+                sub_machines = None
+            targets = config.parse_config(group_config_file, sub_machines)
+        except AssertionError as e:
+            print(f'config of {args.command} invalid:')
+            print(e)
+            exit(2)
+        execute(targets, sys.argv[2:])
+    else:
+        parser.print_usage()
+        exit(2)
