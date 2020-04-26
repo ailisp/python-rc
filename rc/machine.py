@@ -78,6 +78,9 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         return ['ssh', '-o', 'StrictHostKeyChecking=no',
                 *(['-i', self.ssh_key_path] if self.ssh_key_path else []), self.username + '@' + self.ip, '--']
 
+    def ssh_shell_str(self):
+        return ' '.join(self._ssh_shell()[:-1])
+
     def running(self, cmd, *, input=None):
         return running(cmd, shell=self._ssh_shell(), input=input)
 

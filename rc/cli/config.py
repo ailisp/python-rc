@@ -9,6 +9,10 @@ groups_dir = os.path.join(config_dir, 'groups')
 
 def create_config_dirs():
     ok(run(f'mkdir -p {groups_dir}'))
+    with open(os.path.join(config_dir, '.tmux.conf'), 'w') as f:
+        f.write('''set -g mouse on
+bind-key a set-window-option synchronize-panes
+''')
 
 
 def get_spec(spec, default, item):
@@ -37,6 +41,24 @@ def machine_from_spec(spec, default):
         if ssh_key:
             machine.ssh_key_path = ssh_key
         return machine
+
+
+def get_targets(arg):
+    group_ = arg.split('/')
+    group_config_file = get(group_[0])
+    if group_config_file:
+        try:
+            if len(group_) > 1:
+                sub_machines = group_[1].split(',')
+            else:
+                sub_machines = None
+            return parse_config(group_config_file, sub_machines)
+        except Exception as e:
+            print(f'targets: {arg} invalid')
+            print(e)
+            exit(2)
+    else:
+        return None
 
 
 def parse_config(config_file, sub_machines=None):

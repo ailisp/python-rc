@@ -25,20 +25,8 @@ if args.command in ['edit', 'cat', 'ls', 'rm', 'rsync', 'tmux', 'ssh-config']:
     getattr(cli, args.command)(sys.argv[2:])
 else:
     assert len(sys.argv[2:]) > 0
-    group_ = args.command.split('/')
-    group_config_file = config.get(group_[0])
-    if group_config_file:
-        try:
-            print(group_)
-            if len(group_) > 1:
-                sub_machines = group_[1].split(',')
-            else:
-                sub_machines = None
-            targets = config.parse_config(group_config_file, sub_machines)
-        except AssertionError as e:
-            print(f'config of {args.command} invalid:')
-            print(e)
-            exit(2)
+    targets = config.get_targets(args.command)
+    if targets:
         execute(targets, sys.argv[2:])
     else:
         parser.print_usage()

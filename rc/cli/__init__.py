@@ -3,6 +3,7 @@ from rc import run, pmap
 from rc.util import convert_list_command_to_str
 import subprocess
 import os
+import libtmux
 
 
 def execute(targets, args):
@@ -53,4 +54,34 @@ def rm(args):
 
 
 def tmux(args):
-    pass
+    targets = config.get_targets(args[0])
+    if not targets:
+        print(f'targets not exist: {args[0]}')
+        exit(2)
+
+    server = libtmux.Server(socket_name='python-rc', config_file=os.path.join(
+        config.config_dir, '.tmux.conf'))
+    try:
+        sessions = server.list_sessions()
+    except:
+        sessions = []
+    max_python_sessions = -1
+    for s in sessions:
+        if s.name.startswith('python-rc'):
+            n = int(s.name.split('-')[-1])
+            max_python_sessions = max(max_python_sessions, n)
+    max_python_sessions += 1
+
+    session_name = f"python-rc-{max_python_sessions}"
+    session = server.new_session(session_name)
+
+    n = len(targets)
+    w = session.attached_window.id
+    window = session.new_window(window_shell=targets[0].ssh_shell_str())
+    pane = window.panes[0]
+    session.kill_window(w)
+    for i in range(1, n):
+        window.split_window(shell=targets[i].ssh_shell_str())
+    window.select_layout('tiled')
+    window.set_window_option('synchronize-panes', 'on')
+    subprocess.run(['tmux', '-L', 'python-rc', 'a', '-t', session_name])
