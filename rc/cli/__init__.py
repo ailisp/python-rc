@@ -1,5 +1,5 @@
 from rc.cli import config
-from rc import run, pmap
+from rc import run, pmap, p, ep
 from rc.util import convert_list_command_to_str
 import subprocess
 import os
@@ -13,18 +13,17 @@ def execute(targets, args):
         cmd = convert_list_command_to_str(args)
 
     def exec(target):
-        print(f'Start executing {cmd} on {target}')
-        p = target.run(cmd)
-        print(f'End executing {cmd} on {target}, exit code {p.returncode}')
-        print(f'{target} stdout: {p.stdout}')
-
-        return p
+        p(f'Start executing {cmd} on {target}')
+        proc = target.run(cmd)
+        p(f'End executing {cmd} on {target}, exit code {proc.returncode}')
+        p(f'{target} stdout: {proc.stdout}')
+        return proc
     results = pmap(exec, targets)
     if any(map(lambda r: r.returncode != 0, results)):
-        print('Some execution failed')
+        ep('Some execution failed')
         exit(1)
     else:
-        print('All execution succeeded')
+        p('All execution succeeded')
         exit(0)
 
 
@@ -32,14 +31,14 @@ def cat(args):
     group_name = args[0]
     group_config_file = config.get(group_name)
     if group_config_file:
-        print(open(group_config_file).read())
+        p(open(group_config_file).read())
     else:
-        print(f'group {group_name} not exists')
+        p(f'group {group_name} not exists')
         exit(2)
 
 
 def ls(_args):
-    print(run(f'ls {config.groups_dir}').stdout)
+    p(run(f'ls {config.groups_dir}').stdout)
 
 
 def edit(args):
@@ -56,7 +55,7 @@ def rm(args):
 def tmux(args):
     targets = config.get_targets(args[0])
     if not targets:
-        print(f'targets not exist: {args[0]}')
+        ep(f'targets not exist: {args[0]}')
         exit(2)
 
     server = libtmux.Server(socket_name='python-rc', config_file=os.path.join(

@@ -1,5 +1,5 @@
 import os
-from rc import run, ok, pmap
+from rc import run, ok, pmap, p
 import yaml
 import rc
 
@@ -62,7 +62,7 @@ def get_targets(arg):
 
 
 def parse_config(config_file, sub_machines=None):
-    config = yaml.load(open(config_file))
+    config = yaml.safe_load(open(config_file))
     default = config.get('default', {})
     machine_spec = config.get('machines', None)
     if machine_spec is None:
@@ -82,7 +82,9 @@ def parse_config(config_file, sub_machines=None):
         assert len(targets) > 0
     else:
         targets = group_machines.keys()
-    return list(map(lambda n: group_machines[n], sorted(targets)))
+    targets = sorted(targets)
+    p('machine targets: ', ', '.join(targets))
+    return list(map(lambda n: group_machines[n], targets))
 
 
 def get(group_name):

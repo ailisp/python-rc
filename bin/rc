@@ -20,7 +20,6 @@ rc ssh-config: generate ~/.ssh/config that can be used with ssh machine_name, sc
 ''', 'python-rc cli, parallel execute command, download and upload files to machines')
 parser.add_argument('command', help='Subcommand to run')
 args = parser.parse_args(sys.argv[1:2])
-print(args.command)
 if args.command in ['edit', 'cat', 'ls', 'rm', 'rsync', 'tmux', 'ssh-config']:
     getattr(cli, args.command)(sys.argv[2:])
 else:
