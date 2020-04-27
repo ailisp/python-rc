@@ -5,10 +5,12 @@ import rc
 
 config_dir = os.path.expanduser('~/.python-rc/')
 groups_dir = os.path.join(config_dir, 'groups')
+logs_dir = os.path.join(config_dir, 'logs')
 
 
 def create_config_dirs():
     ok(run(f'mkdir -p {groups_dir}'))
+    ok(run(f'mkdir -p {logs_dir}'))
     with open(os.path.join(config_dir, '.tmux.conf'), 'w') as f:
         f.write('''set -g mouse on
 bind-key a set-window-option synchronize-panes

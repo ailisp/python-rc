@@ -1,5 +1,5 @@
 import subprocess
-from rc.exception import RunException
+from rc.exception import RunException, PmapException
 import sys
 from collections import namedtuple
 import os
@@ -32,9 +32,13 @@ def convert_list_command_to_str(cmd: List[str]) -> str:
     return cmd_str.getvalue()
 
 
-def run(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, timeout=None, text=True):
-    p = running(cmd, shell=shell, input=input, text=text)
-    stdout, stderr = p.communicate(timeout=timeout)
+def run(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, timeout=None, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+    p = running(cmd, shell=shell, input=input,
+                text=text, stdout=stdout, stderr=stderr)
+    try:
+        stdout, stderr = p.communicate(timeout=timeout)
+    except Exception as e:
+        raise RunException(e) from None
     return RunResult(returncode=p.returncode, stdout=stdout, stderr=stderr)
 
 
@@ -78,14 +82,15 @@ def python3(script, **kwargs):
     return python(script, **kwargs)
 
 
-def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, text=True):
+def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     if type(cmd) is list:
         cmd = convert_list_command_to_str(cmd)
     try:
         if not shell:
             shell = []
         p = subprocess.Popen([*shell, cmd], stdin=subprocess.PIPE if input else None,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             stdout=stdout, stderr=stderr,
                              universal_newlines=text, preexec_fn=os.setsid)
         if input:
             p.stdin.write(input)
@@ -160,8 +165,16 @@ def go(func, *args, **kwargs):
     return executor.submit(func, *args, **kwargs)
 
 
-def pmap(func, *iterables, timeout=None):
-    return list(executor.map(func, *iterables, timeout=timeout))
+def pmap(func, *iterables, timeout=None, on_exception='raise'):
+    if on_exception == 'raise':
+        return list(executor.map(func, *iterables, timeout=timeout))
+
+    def func_wrapper(arg):
+        try:
+            return func(arg)
+        except Exception as e:
+            return PmapException(e, arg)
+    return list(executor.map(func_wrapper, *iterables, timeout=timeout))
 
 
 def print_stream(q, *, prefix):

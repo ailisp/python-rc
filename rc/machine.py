@@ -4,6 +4,7 @@ from rc.util import run, run_stream, convert_list_command_to_str, \
     bash, sudo, python, python2, python3, running, kill, ok
 from retry import retry
 import datetime
+import subprocess
 
 
 class Machine:
@@ -84,8 +85,8 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
     def running(self, cmd, *, input=None):
         return running(cmd, shell=self._ssh_shell(), input=input)
 
-    def run(self, cmd, *, timeout=None, input=None):
-        return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input)
+    def run(self, cmd, *, timeout=None, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        return run(cmd, shell=self._ssh_shell(), timeout=timeout, input=input, stdout=stdout, stderr=stderr)
 
     def run_stream(self, cmd, input=None):
         return run_stream(cmd, shell=self._ssh_shell(), input=input)

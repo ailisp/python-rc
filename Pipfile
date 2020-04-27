@@ -14,6 +14,8 @@ PyYAML = "*"
 humanfriendly = "*"
 pyte = "*"
 libtmux = "*"
+blessings = "*"
+pytimeparse = "*"
 
 [requires]
 python_version = "3.7"

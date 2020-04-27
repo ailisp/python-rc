@@ -60,3 +60,7 @@ class FirewallRuleCreationException(RcException):
 
 class FirewallRuleDeleteionException(RcException):
     pass
+
+
+class PmapException(RcException):
+    pass

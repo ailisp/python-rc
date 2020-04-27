@@ -1,30 +1,59 @@
 from rc.cli import config
-from rc import run, pmap, p, ep
+from rc import run, pmap, p, ep, RunResult, RunException
 from rc.util import convert_list_command_to_str
 import subprocess
 import os
 import libtmux
+import argparse
+from pytimeparse.timeparse import timeparse
+from threading import Lock
+import term
 
 
 def execute(targets, args):
-    if len(args) == 1:
-        cmd = args[0]
+    execute_argparser = argparse.ArgumentParser(
+        'execute a command on target of machines')
+    execute_argparser.add_argument(
+        '-t', '--timeout', help='timeout to execute commands. ', default='2m')
+    execute_argparser.add_argument('command')
+    execute_argparser.add_argument('args', nargs=argparse.REMAINDER)
+    args = execute_argparser.parse_args(args)
+    timeout = timeparse(args.timeout)
+    if args.args:
+        cmd = convert_list_command_to_str([args.command, *args.args])
     else:
-        cmd = convert_list_command_to_str(args)
+        cmd = args.command
 
-    def exec(target):
-        p(f'Start executing {cmd} on {target}')
-        proc = target.run(cmd)
-        p(f'End executing {cmd} on {target}, exit code {proc.returncode}')
-        p(f'{target} stdout: {proc.stdout}')
-        return proc
-    results = pmap(exec, targets)
-    if any(map(lambda r: r.returncode != 0, results)):
-        ep('Some execution failed')
-        exit(1)
-    else:
-        p('All execution succeeded')
+    l = Lock()
+    for target in targets:
+        print(f'Start executing on {target}')
+
+    def exec(i):
+        target = targets[i]
+        try:
+            log_path = os.path.join(config.logs_dir, str(target))
+            log = open(log_path, 'w')
+            proc = target.run(cmd, timeout=timeout, stdout=log, stderr=log)
+            if proc.returncode == 0:
+                output = f'{term.green}SUCCESS{term.off} on {target}'
+            else:
+                output = f'{term.red}FAIL{term.off} on {target}. Exit code: {proc.returncode}'
+        except RunException as e:
+            output = f'{term.red}FAIL{term.off} on {target}. Timeout'
+        output += f'. Log: file://{log_path}'
+        with l:
+            term.saveCursor()
+            term.up(len(targets) - i)
+            term.clearLine()
+            term.writeLine(output)
+            term.restoreCursor()
+    results = pmap(exec, range(len(targets)))
+    if all(map(lambda r: isinstance(r, RunResult) and r.returncode == 0, results)):
+        term.writeLine('All execution succeeded', term.green)
         exit(0)
+    else:
+        term.writeLine('Some execution failed', term.red)
+        exit(1)
 
 
 def cat(args):
