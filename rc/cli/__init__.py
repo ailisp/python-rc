@@ -105,11 +105,16 @@ def tmux(args):
 
     n = len(targets)
     w = session.attached_window.id
-    window = session.new_window(window_shell=targets[0].ssh_shell_str())
+    window = session.new_window()
     pane = window.panes[0]
     session.kill_window(w)
     for i in range(1, n):
-        window.split_window(shell=targets[i].ssh_shell_str())
+        window.split_window()
     window.select_layout('tiled')
+    for i, pane in enumerate(window.panes):
+        pane.send_keys('\n')
+        pane.send_keys(targets[i].ssh_shell_str())
+        pane.send_keys('\n')
     window.set_window_option('synchronize-panes', 'on')
+    window.panes[0].select_pane()
     subprocess.run(['tmux', '-L', 'python-rc', 'a', '-t', session_name])
