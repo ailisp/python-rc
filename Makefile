@@ -4,7 +4,7 @@ install:
 test:
 	pipenv run pytest -s
 
-pack:
+pack: clean
 	pipenv run python setup.py sdist bdist_wheel
 
 upload:
