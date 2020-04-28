@@ -30,6 +30,7 @@ def execute(targets, args):
 
     def exec(i):
         target = targets[i]
+        ret = None
         try:
             log_path = os.path.join(config.logs_dir, str(target))
             log = open(log_path, 'w')
@@ -38,8 +39,10 @@ def execute(targets, args):
                 output = f'{term.green}SUCCESS{term.off} on {target}'
             else:
                 output = f'{term.red}FAIL{term.off} on {target}. Exit code: {proc.returncode}'
+            ret = proc
         except RunException as e:
             output = f'{term.red}FAIL{term.off} on {target}. Timeout'
+            ret = e
         output += f'. Log: file://{log_path}'
         with l:
             term.saveCursor()
@@ -47,6 +50,7 @@ def execute(targets, args):
             term.clearLine()
             term.writeLine(output)
             term.restoreCursor()
+        return ret
     results = pmap(exec, range(len(targets)))
     if all(map(lambda r: isinstance(r, RunResult) and r.returncode == 0, results)):
         term.writeLine('All execution succeeded', term.green)

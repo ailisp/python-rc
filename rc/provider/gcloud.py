@@ -9,7 +9,7 @@ from rc.util import run
 from rc.exception import MachineCreationException, MachineNotRunningException, MachineShutdownException, \
     MachineDeletionException, MachineChangeTypeException, MachineNotReadyException, SaveImageException, \
     DeleteImageException, FirewallRuleCreationException, FirewallRuleDeleteionException, MachineBootupException, \
-    RcException
+    RcException, DiskCreationException, DiskDeletionException, MachineAddDiskException, MachineRemoveDiskException
 
 gcloud_provider = sys.modules[__name__]
 
@@ -231,6 +231,63 @@ def add_firewall(machine, firewall):
 
 def remove_firewall(machine, firewall):
     pass
+
+
+def create_disk(name, *, type='pd-standard', size, project=None, zone):
+    if project:
+        project = f'--project {project}'
+    else:
+        project = ''
+    p = run(
+        f'gcloud beta compute disks create {name} {project} --type={type} --size={size} --zone={zone}')
+    if p.returncode != 0:
+        raise DiskCreationException(p.stderr)
+
+
+def add_disk(machine, disk):
+    p = run(
+        f'gcloud compute instances attach-disk {machine.name} --disk={disk} --zone {machine.zone} --device-name={disk}')
+    if p.returncode != 0:
+        raise MachineAddDiskException(p.stderr)
+    p = machine.sudo('lsblk -f /dev/disk/by-id/google-' +
+                     disk + " | awk '{print $2}'")
+    if p.returncode != 0:
+        raise MachineAddDiskException(p.stderr)
+    fstype = p.stdout.strip()
+    assert fstype.startswith('FSTYPE')
+    if fstype.strip() != 'FSTYPE':
+        # it's already been formatted and there's a filesystem on it
+        p = machine.sudo(f'''
+        mkdir -p /mnt/{disk}
+        mount -o discard,defaults /dev/disk/by-id/google-{disk} /mnt/{disk}
+        chmod a+w /mnt/{disk}
+        ''')
+    else:
+        p = machine.sudo(f'''
+        sudo mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/disk/by-id/google-{disk}
+        mkdir -p /mnt/{disk}
+        mount -o discard,defaults /dev/disk/by-id/google-{disk} /mnt/{disk}
+        sudo chmod a+w /mnt/{disk}
+        ''')
+    if p.returncode != 0:
+        raise MachineAddDiskException(p.stderr)
+
+
+def remove_disk(machine, disk):
+    p = machine.sudo(f'umount /dev/disk/by-id/google-{disk}')
+    if p.returncode != 0 and 'No such file or directory' not in p.stderr:
+        raise MachineRemoveDiskException(p.stderr)
+    p = run(
+        f'gcloud compute instances detach-disk {machine.name} --disk {disk} --zone {machine.zone}'
+    )
+    if p.returncode != 0:
+        raise MachineRemoveDiskException(p.stderr)
+
+
+def delete_disk(disk, zone):
+    p = run(f'gcloud compute disks delete {disk} --zone {zone}', input='y\n')
+    if p.returncode != 0:
+        raise DiskDeletionException(p.stderr)
 
 
 def set_project(project):

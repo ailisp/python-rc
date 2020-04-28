@@ -62,5 +62,21 @@ class FirewallRuleDeleteionException(RcException):
     pass
 
 
+class DiskCreationException(RcException):
+    pass
+
+
+class DiskDeletionException(RcException):
+    pass
+
+
+class MachineAddDiskException(RcException):
+    pass
+
+
+class MachineRemoveDiskException(RcException):
+    pass
+
+
 class PmapException(RcException):
     pass
