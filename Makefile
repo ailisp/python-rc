@@ -4,11 +4,13 @@ install:
 test:
 	pipenv run pytest -s
 
-pack: clean
+pack:
 	pipenv run python setup.py sdist bdist_wheel
 
 upload:
 	pipenv run twine upload dist/*
+
+release: clean pack upload
 
 clean:
 	rm -rf dist
