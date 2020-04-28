@@ -14,7 +14,6 @@ PyYAML = "*"
 humanfriendly = "*"
 pyte = "*"
 libtmux = "*"
-blessings = "*"
 pytimeparse = "*"
 
 [requires]
