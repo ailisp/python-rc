@@ -36,7 +36,8 @@ def machine_from_spec(spec, default=None):
         return machine
     else:
         name = spec.get('name')
-        machine = provider.get(name, **default)
+        spec = {**default, **spec}
+        machine = provider.get(name, **spec)
         assert machine
         return machine
 
