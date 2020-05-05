@@ -174,7 +174,7 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
             op = '>'
         cmd = f"""cat {op} {path} <<'c7a88caeb23f4ac0f377c59b703fb7f1091d0708'
 {content}
-'c7a88caeb23f4ac0f377c59b703fb7f1091d0708'"""
+c7a88caeb23f4ac0f377c59b703fb7f1091d0708"""
         if user:
             return self.sudo(cmd, user=user)
         else:
