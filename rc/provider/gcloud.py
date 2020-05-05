@@ -105,7 +105,7 @@ def list(*, pattern=None, project=None, username=None, ssh_key_path=None):
     return result
 
 
-def get(name, *, username=None, ssh_key_path=None, project=None):
+def get(name, *, username=None, ssh_key_path=None, project=None, **kwargs):
     cmd = ['gcloud', 'compute', 'instances', 'list', '--format',
              'value(zone, name, networkInterfaces[0].accessConfigs[0].natIP)',
              '--filter', 'name=' + name]

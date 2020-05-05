@@ -23,25 +23,21 @@ def get_spec(spec, default, item):
     return spec.get(item, default.get(item))
 
 
-def machine_from_spec(spec, default):
+def machine_from_spec(spec, default=None):
+    if default is None:
+        default = {}
     provider = get_spec(spec, default, 'provider')
     assert provider
     provider = getattr(rc.provider, provider)
     assert provider
     if type(spec) is str:
-        machine = provider.get(spec)
+        machine = provider.get(spec, **default)
         assert machine
         return machine
     else:
         name = spec.get('name')
-        machine = provider.get(name)
+        machine = provider.get(name, **default)
         assert machine
-        user = get_spec(spec, default, 'user')
-        if user:
-            machine.user = user
-        ssk_key = get_spec(spec, default, 'ssh_key')
-        if ssh_key:
-            machine.ssh_key_path = ssh_key
         return machine
 
 
