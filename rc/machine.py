@@ -8,13 +8,14 @@ import subprocess
 
 
 class Machine:
-    def __init__(self, *, provider, name, zone, ip, username, ssh_key_path):
+    def __init__(self, *, provider, name, ip, username, ssh_key_path, **kwargs):
         self.provider = provider
         self.name = name
-        self.zone = zone
         self.ip = ip
         self.username = username
         self.ssh_key_path = ssh_key_path
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def __eq__(self, other):
         return (self.provider, self.name, self.zone, self.ip, self.username, self.ssh_key_path) == (other.provider, other.name, other.zone, other.ip, other.username, other.ssh_key_path)
