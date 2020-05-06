@@ -42,7 +42,7 @@ def run(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, time
     return RunResult(returncode=p.returncode, stdout=stdout, stderr=stderr)
 
 
-def bash(script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False, run_shell=['/bin/sh', '-c']):
+def bash(script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False, run_shell=['/bin/sh', '-c'], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     cmd = 'bash '
     if login:
         cmd += '-l '
@@ -51,10 +51,10 @@ def bash(script, *, timeout=None, flag='set -euo pipefail', login=False, interac
     if flag:
         script = flag + '\n' + script
 
-    return run(cmd, input=script, timeout=timeout, shell=run_shell)
+    return run(cmd, input=script, timeout=timeout, shell=run_shell, stdout=stdout, stderr=stderr)
 
 
-def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail', run_shell=['/bin/sh', '-c']):
+def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail', run_shell=['/bin/sh', '-c'], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     cmd = 'sudo '
     if user != 'root':
         cmd += '-u ' + user + ' '
@@ -64,14 +64,14 @@ def sudo(script, *, shell=None, user='root', timeout=None, flag='set -euo pipefa
         cmd += '-s ' + shell + ' '
     if flag:
         script = flag + '\n' + script
-    return run(cmd, input=script, timeout=timeout, shell=run_shell)
+    return run(cmd, input=script, timeout=timeout, shell=run_shell, stdout=stdout, stderr=stderr)
 
 
-def python(script, *, timeout=None, python_path='python', user=None, run_shell=['/bin/sh', '-c']):
+def python(script, *, timeout=None, python_path='python', user=None, run_shell=['/bin/sh', '-c'], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     if user:
-        return sudo(script, user=user, flag='', shell=python_path, timeout=timeout, run_shell=run_shell)
+        return sudo(script, user=user, flag='', shell=python_path, timeout=timeout, run_shell=run_shell, stdout=stdout, stderr=stderr)
     else:
-        return run(python_path, input=script, timeout=timeout, shell=run_shell)
+        return run(python_path, input=script, timeout=timeout, shell=run_shell, stdout=stdout, stderr=stderr)
 
 
 def python2(script, **kwargs):

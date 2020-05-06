@@ -92,13 +92,13 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
     def run_stream(self, cmd, input=None):
         return run_stream(cmd, shell=self._ssh_shell(), input=input)
 
-    def sudo(self, script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail'):
+    def sudo(self, script, *, shell=None, user='root', timeout=None, flag='set -euo pipefail', stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         return sudo(script, shell=shell, user=user, timeout=timeout, flag=flag,
-                    run_shell=self._ssh_shell())
+                    run_shell=self._ssh_shell(), stdout=stdout, stderr=stderr)
 
-    def bash(self, script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False):
+    def bash(self, script, *, timeout=None, flag='set -euo pipefail', login=False, interactive=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         return bash(script, timeout=timeout, login=login, interactive=interactive, flag=flag,
-                    run_shell=self._ssh_shell())
+                    run_shell=self._ssh_shell(), stdout=stdout, stderr=stderr)
 
     def run_bg(self, script, *, cmd='bash', stdout='/tmp/python-rc.log', stderr='/tmp/python-rc.log', exitcode='/tmp/python-rc.exitcode', pid='/tmp/python-rc.pid', user=None):
         ts = datetime.datetime.strftime(
@@ -114,8 +114,8 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
         print(p.stdout)
         print('aaaaa', datetime.datetime.now())
 
-    def python(self, script, *, timeout=None, python_path='python', user=None):
-        return python(script, timeout=timeout, python_path=python_path, user=user, run_shell=self._ssh_shell())
+    def python(self, script, *, timeout=None, python_path='python', user=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        return python(script, timeout=timeout, python_path=python_path, user=user, run_shell=self._ssh_shell(), stdout=stdout, stderr=stderr)
 
     def python2(self, script, **kwargs):
         return python2(script, run_shell=self._ssh_shell(), **kwargs)
