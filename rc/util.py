@@ -102,7 +102,7 @@ def running(cmd: Union[str, List[str]], *, shell=['/bin/sh', '-c'], input=None, 
         # print(e[0].__name__)
         # print(e[1])
         # import traceback
-        # traceback.print_exception(e[2])
+        # traceback.print_exception(*e)
         raise RunException(e[1]) from None
 
 

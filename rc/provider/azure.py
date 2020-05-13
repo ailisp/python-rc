@@ -28,6 +28,13 @@ def _delete_group(group_name):
 
 
 def create(*, name, machine_size, disk_size_gb=None, image, location):
+    """
+    Available machine_size: find online for detail and price, or: az vm list-sizes --location location -o table
+
+    Available image: az vm image list -o table
+
+    Available location: az account list-locations -o table
+    """
     args = ['--name', name]
     args += ['--resource-group', name]
     args += ['--image', image]

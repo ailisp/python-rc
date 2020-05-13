@@ -41,14 +41,15 @@ def _reserve_ip_address(ip, name, region, *, project=None):
 
 def delete_firewall(name, *, project=None):
     cmd = ['gcloud', 'compute', 'firewall-rules', 'delete',
-                name]
+           name]
     if project:
         cmd += ['--project', project]
     return run(cmd, input='yes\n')
 
 
 def _address_exist(name, region, *, project=None):
-    cmd = ['gcloud', 'compute', 'addresses', 'describe', '--region', region, name]
+    cmd = ['gcloud', 'compute', 'addresses',
+           'describe', '--region', region, name]
     if project:
         cmd += ['--project', project]
     return run(cmd).returncode == 0
@@ -62,7 +63,8 @@ def firewall_exist(name, *, project=None):
 
 
 def _release_ip_address(name, region, *, project=None):
-    cmd = ['gcloud', 'compute', 'addresses', 'delete', '--region', region, name]
+    cmd = ['gcloud', 'compute', 'addresses',
+           'delete', '--region', region, name]
     if project:
         cmd += ['--project', project]
     return run(cmd, input='yes\n')
@@ -107,8 +109,8 @@ def list(*, pattern=None, project=None, username=None, ssh_key_path=None):
 
 def get(name, *, username=None, ssh_key_path=None, project=None, **kwargs):
     cmd = ['gcloud', 'compute', 'instances', 'list', '--format',
-             'value(zone, name, networkInterfaces[0].accessConfigs[0].natIP)',
-             '--filter', 'name=' + name]
+           'value(zone, name, networkInterfaces[0].accessConfigs[0].natIP)',
+           '--filter', 'name=' + name]
     if project:
         cmd += ['--project', project]
     else:
@@ -129,7 +131,8 @@ def get(name, *, username=None, ssh_key_path=None, project=None, **kwargs):
 @lru_cache()
 def _get_username(project):
     p = run(f'gcloud compute project-info describe --project {project}')
-    project_metadata = yaml.safe_load(p.stdout)['commonInstanceMetadata']['items']
+    project_metadata = yaml.safe_load(
+        p.stdout)['commonInstanceMetadata']['items']
     enable_oslogin = False
     for md in project_metadata:
         if md['key'] == 'enable-oslogin':
@@ -145,7 +148,7 @@ def _get_username(project):
 
 def _get_ip(name, *, project=None):
     cmd = ['gcloud', 'compute', 'instances', 'list', '--filter', 'name='+name, '--format',
-             'get(networkInterfaces[0].accessConfigs[0].natIP)']
+           'get(networkInterfaces[0].accessConfigs[0].natIP)']
     if project:
         cmd += ['--project', project]
     p = run(cmd)
@@ -155,7 +158,7 @@ def _get_ip(name, *, project=None):
 @retry(MachineNotRunningException, delay=2)
 def _wait_bootup(name, *, project=None):
     cmd = ['gcloud', 'compute', 'instances', 'list', '--format',
-             'value(status)', '--filter', 'name=' + name]
+           'value(status)', '--filter', 'name=' + name]
     if project:
         cmd += ['--project', project]
     p = run(cmd)
@@ -228,7 +231,8 @@ def delete(machine):
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)
     if _address_exist(machine.name, _zone_region(machine.zone), project=project):
-        p = _release_ip_address(machine.name, _zone_region(machine.zone), project=project)
+        p = _release_ip_address(machine.name, _zone_region(
+            machine.zone), project=project)
         if p.returncode != 0:
             raise MachineDeletionException(p.stderr)
     if firewall_exist(machine.name, project=project):
@@ -239,7 +243,7 @@ def delete(machine):
 
 def _delete_machine(name, zone, *, project=None):
     cmd = ['gcloud', 'compute', 'instances',
-                'delete', name, '--zone', zone]
+           'delete', name, '--zone', zone]
     if project:
         cmd += ['--project', project]
     return run(cmd, input='yes\n')
@@ -308,7 +312,7 @@ def create_disk(name, *, type='pd-standard', size, project=None, zone):
     else:
         project = ''
     p = run(
-        f'gcloud beta compute disks create {name} {project} --type={type} --size={size} --zone={zone}')
+        f'gcloud compute disks create {name} {project} --type={type} --size={size} --zone={zone}')
     if p.returncode != 0:
         raise DiskCreationException(p.stderr)
 
@@ -357,7 +361,7 @@ def delete_disk(disk, zone, *, project=None):
     cmd = f'gcloud compute disks delete {disk} --zone {zone}'
     if project:
         cmd += f' --project {project}'
-    p = run(cmd, input = 'y\n')
+    p = run(cmd, input='y\n')
     if p.returncode != 0:
         raise DiskDeletionException(p.stderr)
 

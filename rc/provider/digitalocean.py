@@ -79,19 +79,21 @@ def shutdown(machine):
 
 
 def create(name, *, image, region, size, firewall_names=None):
-    # Available images:
-    # user images: doctl compute snapshot list
-    # digitalocean linux distro images: doctl compute image list-distribution
-    # digitalocean application images: doctl compute image list-application
-    # Use the slug for digitalocean images. Use name for user images
+    """
+    Available images:
+    user images: doctl compute snapshot list
+    digitalocean linux distro images: doctl compute image list-distribution
+    digitalocean application images: doctl compute image list-application
+    Use the slug for digitalocean images. Use name for user images
 
-    # Available regions:
-    # doctl compute region list
-    # Use slug to refer a region
+    Available regions:
+    doctl compute region list
+    Use slug to refer a region
 
-    # Available machine sizes:
-    # doctl compute size list
-    # Use slug to refer a machine size
+    Available machine sizes:
+    doctl compute size list
+    Use slug to refer a machine size
+    """
     machine = get(name)
     if machine:
         raise MachineCreationException(f'Machine {name} is already exist')
@@ -153,7 +155,7 @@ def create_firewall(name, *, direction='in', ports, ips=['0.0.0.0/0']):
             rule += ',address:'.join(ips)
         else:
             protocol, port = port.split(':')
-            rule = f'protocol:{prototocol},port:{port},address:'
+            rule = f'protocol:{protocol},port:{port},address:'
             rule += ',address:'.join(ips)
         rules.append(rule)
     rules = ' '.join(rules)

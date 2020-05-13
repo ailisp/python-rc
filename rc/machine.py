@@ -105,14 +105,20 @@ rsync -e 'ssh -o StrictHostKeyChecking=no -i {self.ssh_key_path}' -r \
             datetime.datetime.utcnow(), '%Y%m%d_%H%M%S')
         ok(self.ensure_dir(f'/tmp/python-rc'))
         ok(self.edit(f'/tmp/python-rc/script_{ts}', script, user=user))
-        print('here we go', datetime.datetime.now())
         run_cmd = f'( {cmd} /tmp/python-rc/script_{ts} >>{stdout} 2>>{stderr} & echo -n $! > {pid}; wait $!; echo -n $? >{exitcode}) </dev/null >/dev/null 2>/dev/null &'
         if user:
             p = ok(self.sudo(run_cmd, user=user))
         else:
             p = ok(self.run(run_cmd))
         print(p.stdout)
-        print('aaaaa', datetime.datetime.now())
+
+    def kill_bg(self, pid='/tmp/python-rc.pid', signal='TERM', timeout=None):
+        return self.sudo(f'''
+        /bin/kill -{signal} -$(cat {pid})
+        while /bin/kill -0 -$(cat {pid}); do
+            sleep 1
+        done
+        ''', timeout=timeout)
 
     def python(self, script, *, timeout=None, python_path='python', user=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         return python(script, timeout=timeout, python_path=python_path, user=user, run_shell=self._ssh_shell(), stdout=stdout, stderr=stderr)
