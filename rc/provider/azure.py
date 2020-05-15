@@ -82,7 +82,7 @@ def delete(machine):
         raise MachineDeletionException(p.stderr)
 
 
-def get(name, *, username=None, ssh_key_path=None):
+def get(name, *, username=None, ssh_key_path=None, **kwargs):
     p = run(['az', 'vm', 'list-ip-addresses', '-n', name, '-g', name])
     if p.returncode == 0:
         res = json.loads(p.stdout)
