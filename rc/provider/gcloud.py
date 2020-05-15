@@ -72,17 +72,20 @@ def _release_ip_address(name, region, *, project=None):
 
 SSH_KEY_PATH = os.path.expanduser('~/.ssh/google_compute_engine')
 
-if not os.path.exists(SSH_KEY_PATH):
-    print("There is no key at {}, creating new key.".format(SSH_KEY_PATH))
-    # Generate new ssh key to log in.
-    # WARNING: It will create a key with an empty passphrase.
-    run(["ssh-keygen", "-f", SSH_KEY_PATH, "-t", "rsa", "-N", '""'])
-    # Upload key
-    run(["gcloud", "compute", "os-login", "ssh-keys",
-         "add", "--key-file={}.pub".format(SSH_KEY_PATH)])
+
+def _generate_gcloud_ssh_key():
+    if not os.path.exists(SSH_KEY_PATH):
+        print("There is no key at {}, creating new key.".format(SSH_KEY_PATH))
+        # Generate new ssh key to log in.
+        # WARNING: It will create a key with an empty passphrase.
+        run(["ssh-keygen", "-f", SSH_KEY_PATH, "-t", "rsa", "-N", '""'])
+        # Upload key
+        run(["gcloud", "compute", "os-login", "ssh-keys",
+             "add", "--key-file={}.pub".format(SSH_KEY_PATH)])
 
 
 def list(*, pattern=None, project=None, username=None, ssh_key_path=None):
+    _generate_gcloud_ssh_key()
     cmd = ['gcloud', 'compute', 'instances', 'list', '--format',
            'value(zone, name, networkInterfaces[0].accessConfigs[0].natIP)']
     if project:
@@ -108,6 +111,7 @@ def list(*, pattern=None, project=None, username=None, ssh_key_path=None):
 
 
 def get(name, *, username=None, ssh_key_path=None, project=None, **kwargs):
+    _generate_gcloud_ssh_key()
     cmd = ['gcloud', 'compute', 'instances', 'list', '--format',
            'value(zone, name, networkInterfaces[0].accessConfigs[0].natIP)',
            '--filter', 'name=' + name]
@@ -169,6 +173,7 @@ def _wait_bootup(name, *, project=None):
 
 def create(name, *, project=None, machine_type, disk_size, image_project, image_family=None, image=None, zone, min_cpu_platform=None,
            preemptible=False, firewall_allows=None, reserve_ip=True, firewalls=None, disk_type=None):
+    _generate_gcloud_ssh_key()
     args = [name]
     args += ['--machine-type', machine_type]
     args += ['--boot-disk-size', disk_size]

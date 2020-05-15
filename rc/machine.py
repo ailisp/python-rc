@@ -4,6 +4,7 @@ from rc.util import run, run_stream, convert_list_command_to_str, \
     bash, sudo, python, python2, python3, running, kill, ok
 from retry import retry
 import datetime
+import os
 import subprocess
 
 
@@ -13,7 +14,7 @@ class Machine:
         self.name = name
         self.ip = ip
         self.username = username
-        self.ssh_key_path = ssh_key_path
+        self.ssh_key_path = os.path.expanduser(ssh_key_path)
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -21,10 +22,9 @@ class Machine:
         return (self.provider, self.name, self.zone, self.ip, self.username, self.ssh_key_path) == (other.provider, other.name, other.zone, other.ip, other.username, other.ssh_key_path)
 
     def __repr__(self):
-        return 'Machine(provider={provider}, name={name}, zone={zone}, ip={ip}, username={username}, ssh_key_path={ssh_key_path})'.format(
+        return 'Machine(provider={provider}, name={name}, ip={ip}, username={username}, ssh_key_path={ssh_key_path})'.format(
             provider=self.provider,
             name=self.name,
-            zone=self.zone,
             ip=self.ip,
             username=self.username,
             ssh_key_path=self.ssh_key_path
