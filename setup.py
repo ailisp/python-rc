@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="python-rc",  # Replace with your own username
-    version="0.3.12",
+    version="0.3.13",
     author="Bo Yao",
     author_email="icerove@gmail.com",
     description="Python remote control library for programmatically control remote machines",
