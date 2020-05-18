@@ -163,7 +163,7 @@ def delete(machine):
 
 
 def create_firewall(name, *, direction='in', ports, ips=['0.0.0.0/0']):
-    cmd = f'doctl compute firewall create {name} --tag-names {name}'
+    cmd = f'doctl compute firewall create --name {name} --tag-names {name}'
     rules = []
     for port in ports:
         if port == 'icmp':
@@ -171,7 +171,7 @@ def create_firewall(name, *, direction='in', ports, ips=['0.0.0.0/0']):
             rule += ',address:'.join(ips)
         else:
             protocol, port = port.split(':')
-            rule = f'protocol:{protocol},port:{port},address:'
+            rule = f'protocol:{protocol},ports:{port},address:'
             rule += ',address:'.join(ips)
         rules.append(rule)
     rules = ' '.join(rules)
@@ -182,10 +182,11 @@ def create_firewall(name, *, direction='in', ports, ips=['0.0.0.0/0']):
     else:
         raise FirewallRuleCreationException(
             'direction must be either "in" or "out"')
+    print(cmd)
     p = run(cmd)
     if p.returncode != 0:
         raise FirewallRuleCreationException(p.stderr)
-    return Firewall(name, provider=digitalocean_provider, direction=direction, action=action, ports=ports, ips=ips)
+    return Firewall(name, provider=digitalocean_provider, direction=direction, action='allow', ports=ports, ips=ips)
 
 
 def get_image(name):

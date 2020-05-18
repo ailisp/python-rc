@@ -16,6 +16,7 @@ rc cat <group name>: show machines in group
 rc ls: show defined groups
 rc rm <group name>: delete group definition (does not delete machines)
 rc rsync: parallel rsync
+rc ssh <name>: ssh to single machine
 rc ssh-config: generate ~/.ssh/config that can be used with ssh machine_name, scp, rsync, mosh, etc.
 ''', 'python-rc cli, parallel execute command, download and upload files to machines')
 parser.add_argument('command', help='Subcommand to run')
