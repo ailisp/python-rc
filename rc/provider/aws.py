@@ -82,7 +82,7 @@ def _ensure_aws_keypair(username, ssh_key_path, region):
     return p
 
 
-def get(id_or_name, *, username=None, ssh_key_path=None, region=None):
+def get(id_or_name, *, username=None, ssh_key_path=None, region=None, **kwargs):
     if region:
         if id_or_name.startswith('i-'):
             cmd = f'aws ec2 describe-instances --region {region} --instance-ids {id_or_name}'
