@@ -82,12 +82,12 @@ def _ensure_aws_keypair(username, ssh_key_path, region):
     return p
 
 
-def get(id_or_name, *, username=None, ssh_key_path=None, region=None, **kwargs):
+def get(name, *, username=None, ssh_key_path=None, region=None, **kwargs):
     if region:
-        if id_or_name.startswith('i-'):
-            cmd = f'aws ec2 describe-instances --region {region} --instance-ids {id_or_name}'
+        if name.startswith('i-'):
+            cmd = f'aws ec2 describe-instances --region {region} --instance-ids {name}'
         else:
-            cmd = f'aws ec2 describe-instances --region {region} --filters Name=tag:Name,Values={id_or_name}'
+            cmd = f'aws ec2 describe-instances --region {region} --filters Name=tag:Name,Values={name}'
         p = run(cmd)
         if p.returncode != 0:
             return None
@@ -103,13 +103,13 @@ def get(id_or_name, *, username=None, ssh_key_path=None, region=None, **kwargs):
             return _instance_to_machine(instances[0], username, ssh_key_path)
     else:
         machines = list(username=username, ssh_key_path=ssh_key_path)
-        if id_or_name.startswith('i-'):
+        if name.startswith('i-'):
             for machine in machines:
-                if machine.id == id_or_name:
+                if machine.id == name:
                     return machine
         else:
             for machine in machines:
-                if machine.name == id_or_name:
+                if machine.name == name:
                     return machine
         return None
 
