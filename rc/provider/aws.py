@@ -147,6 +147,8 @@ def create(name, *, machine_type, disk_size_gb, image, init_username, region, re
     if username != init_username:
         machine.ensure_user(username)
         machine.username = username
+    machine.edit('/etc/hostname', name, user='root')
+    machine.sudo(f'hostname {name}')
     return machine
 
 
@@ -184,6 +186,11 @@ def delete(machine):
         f'aws ec2 terminate-instances --instance-ids {machine.id} --region {machine.region}')
     if p.returncode != 0:
         raise MachineDeletionException(p.stderr)
+    while True:
+        s = status(machine)
+        if s == 'terminated':
+            return
+        time.sleep(2)
 
 
 def shutdown(machine):

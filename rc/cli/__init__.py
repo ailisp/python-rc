@@ -8,6 +8,7 @@ import argparse
 from pytimeparse.timeparse import timeparse
 from threading import Lock
 import term
+from rc import gcloud, aws, digitalocean, azure
 
 
 def execute(targets, args):
@@ -122,3 +123,29 @@ def tmux(args):
     window.set_window_option('synchronize-panes', 'on')
     window.panes[0].select_pane()
     subprocess.run(['tmux', '-L', 'python-rc', 'a', '-t', session_name])
+
+
+def ssh_config(args):
+    pass
+    # config_path = os.path.expanduser('~/.ssh/config')
+    # run(['touch', config_path])
+    # run(['chmod', '0700', config_path])
+
+    # machines = gcloud.list()
+    # do_machines = digitalocean.list()
+
+    # with open(config_path, 'w') as f:
+    #     for machine in machines:
+    #         if machine.ip:
+    #             f.write('Host ' + machine.name + '\n')
+    #             f.write('\tHostName ' + machine.ip + '\n')
+    #             f.write(f'\tIdentityFile {machine.ssh_key_path}\n')
+    #             f.write(f'\tUser {machine.username}\n')
+    #             f.write('\n')
+    #     for machine in do_machines:
+    #         if machine.ip:
+    #             f.write('Host ' + machine.name + '\n')
+    #             f.write('\tHostName ' + machine.ip + '\n')
+    #             f.write(f'\tIdentityFile {machine.ssh_key_path}\n')
+    #             f.write(f'\tUser {machine.username}\n')
+    #             f.write('\n')
